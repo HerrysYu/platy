@@ -1,6 +1,6 @@
 # Project Maya iOS
 
-This repo is now wired to the Supabase project `yxsjccowvxzxjiqfhazg`.
+This repo is now wired to the Supabase project ``.
 
 ## What changed
 
@@ -19,7 +19,7 @@ This repo is now wired to the Supabase project `yxsjccowvxzxjiqfhazg`.
 
 ## Supabase notes
 
-- Remote project ref: `yxsjccowvxzxjiqfhazg`
+- Remote project ref: ``
 - The migration baseline is in `supabase/migrations/`
 - Edge Functions live in `supabase/functions/`
 
