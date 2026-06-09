@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+*.swp
+
+# Xcode
+## User settings
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+## Build generated
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Various Xcode/Swift Package Manager
+.swiftpm/
+Packages/
+.build/
+*.xcodeproj/*.xcworkspace/xcshareddata/swiftpm/
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+.env
+.env.*
+!.env.example
+
+# Misc
+*.log
+node_modules/
