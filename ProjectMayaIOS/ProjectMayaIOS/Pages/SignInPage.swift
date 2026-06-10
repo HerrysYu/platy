@@ -132,12 +132,12 @@ struct SignInPage: View {
 
     private func signIn() {
         guard !email.isEmpty else {
-            showAlert(message: "Please enter your email")
+            showAlert(message: String(localized: "Please enter your email"))
             return
         }
 
         guard !password.isEmpty else {
-            showAlert(message: "Please enter your password")
+            showAlert(message: String(localized: "Please enter your password"))
             return
         }
 
@@ -165,7 +165,7 @@ struct SignInPage: View {
                         self.navigateToVerification = true
                     }
                 } else {
-                    showAlert(message: "Sign in failed: \(error.localizedDescription)")
+                    showAlert(message: String(localized: "Sign in failed: \(error.localizedDescription)"))
                 }
             }
         }

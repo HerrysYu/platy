@@ -4,6 +4,16 @@ enum UserLanguagePreferences {
     static let defaultSystemLanguage = "中文"
     static let defaultMenuLanguage = "English"
 
+    /// The app UI language now follows the iOS system language instead of an
+    /// in-app setting. This maps the active localization to the value the
+    /// backend (profiles table, combo agent) expects.
+    static var appLanguage: String {
+        let preferred = Bundle.main.preferredLocalizations.first
+            ?? Locale.preferredLanguages.first
+            ?? "en"
+        return preferred.lowercased().hasPrefix("zh") ? "中文" : "English"
+    }
+
     private enum StorageKey {
         static let systemLanguage = "systemLanguage"
         static let menuLanguage = "menuLanguage"

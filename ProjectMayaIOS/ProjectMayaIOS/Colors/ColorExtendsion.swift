@@ -161,8 +161,8 @@ struct PlatyShimmer: ViewModifier {
 }
 
 struct PlatyScreenHeader: View {
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey?
     var alignment: HorizontalAlignment = .leading
     var frameAlignment: Alignment = .leading
 
@@ -186,7 +186,7 @@ struct PlatyScreenHeader: View {
 }
 
 struct PlatyPrimaryButton: View {
-    let title: String
+    let title: LocalizedStringKey
     var systemImage: String?
     var isLoading = false
     var isDisabled = false
@@ -245,7 +245,7 @@ struct PlatyIconButton: View {
 }
 
 struct PlatyInputField: View {
-    let placeholder: String
+    let placeholder: LocalizedStringKey
     let systemImage: String
     @Binding var text: String
     var isSecure = false
@@ -304,7 +304,7 @@ struct PlatyCard<Content: View>: View {
 }
 
 struct PlatySectionLabel: View {
-    let title: String
+    let title: LocalizedStringKey
 
     var body: some View {
         Text(title)

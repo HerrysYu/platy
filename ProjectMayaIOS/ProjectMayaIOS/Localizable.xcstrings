@@ -1,0 +1,471 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "About" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "介绍" } } }
+    },
+    "Account verified successfully! You can now sign in." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "账号验证成功！现在可以登录了。" } } }
+    },
+    "Add Combo to Order" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将套餐加入清单" } } }
+    },
+    "Add dishes by tapping translated menu labels." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点按菜单上的翻译标签即可添加菜品。" } } }
+    },
+    "Add Page" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加页面" } } }
+    },
+    "Add to Order" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加入点菜清单" } } }
+    },
+    "Added" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已添加" } } }
+    },
+    "Added!" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已添加！" } } }
+    },
+    "AI Combo" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "AI 套餐" } } }
+    },
+    "Alcohol-Free" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无酒精" } } }
+    },
+    "All" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全部" } } }
+    },
+    "Allergens" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "过敏原" } } }
+    },
+    "Already have an account?" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已有账号？" } } }
+    },
+    "App Language" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用语言" } } }
+    },
+    "App language follows your iOS system setting." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用语言跟随 iOS 系统设置。" } } }
+    },
+    "Cancel" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } } }
+    },
+    "Check Your Email" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看你的邮箱" } } }
+    },
+    "Check your spam folder or try resending." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请检查垃圾邮件文件夹，或尝试重新发送。" } } }
+    },
+    "Clear" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除" } } }
+    },
+    "Clear saved" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除已保存" } } }
+    },
+    "Clear Saved Credentials" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除已保存的凭据" } } }
+    },
+    "Close" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } } }
+    },
+    "Could not load dish details" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法加载菜品信息" } } }
+    },
+    "Couldn't build a combo" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未能生成套餐" } } }
+    },
+    "Create Account" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "创建账号" } } }
+    },
+    "Create one" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册一个" } } }
+    },
+    "Creating Account..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "创建账号中…" } } }
+    },
+    "Cultural Background" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文化背景" } } }
+    },
+    "Customize your dietary needs" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "定制你的饮食偏好" } } }
+    },
+    "Dairy" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "乳制品" } } }
+    },
+    "Dessert" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "甜品" } } }
+    },
+    "Didn't receive the code?" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有收到验证码？" } } }
+    },
+    "Dietary" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "饮食" } } }
+    },
+    "Done" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成" } } }
+    },
+    "Don't have an account?" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有账号？" } } }
+    },
+    "Download" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载" } } }
+    },
+    "Download Failed" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载失败" } } }
+    },
+    "Download local MLX model" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载本地 MLX 模型" } } }
+    },
+    "Download the local MLX model for menu cleanup." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载本地 MLX 模型用于菜单清理。" } } }
+    },
+    "Downloading %lld%%" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载中 %lld%%" } } }
+    },
+    "Downloading Gemma 3 1B 4-bit" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在下载 Gemma 3 1B 4-bit" } } }
+    },
+    "Drink" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "饮品" } } }
+    },
+    "e.g. China, USA..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "例如：中国、美国…" } } }
+    },
+    "Edit Preferences" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑偏好" } } }
+    },
+    "Eggs" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "鸡蛋" } } }
+    },
+    "Email" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "邮箱" } } }
+    },
+    "Enter 6-digit code" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入 6 位验证码" } } }
+    },
+    "Failed to resend code: %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新发送失败：%@" } } }
+    },
+    "Finding dish details" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在查找菜品信息" } } }
+    },
+    "Fish" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "鱼类" } } }
+    },
+    "Follow System" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跟随系统" } } }
+    },
+    "Gluten" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "麸质" } } }
+    },
+    "Halal" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清真" } } }
+    },
+    "Home" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "首页" } } }
+    },
+    "I am allergic to:" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我对以下食物过敏：" } } }
+    },
+    "I follow these diets:" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我的饮食习惯：" } } }
+    },
+    "Images and descriptions may take a moment." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图片和介绍可能需要一点时间。" } } }
+    },
+    "Jump back into translated menus you saved." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回看你保存的翻译菜单。" } } }
+    },
+    "Kosher" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "犹太洁食" } } }
+    },
+    "Language" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "语言" } } }
+    },
+    "Main" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主菜" } } }
+    },
+    "Manage" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "管理" } } }
+    },
+    "Meal History" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用餐历史" } } }
+    },
+    "Menu" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单" } } }
+    },
+    "Menu Language" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单语言" } } }
+    },
+    "Menu Lens" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单翻译" } } }
+    },
+    "Message" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提示" } } }
+    },
+    "MLX model downloaded" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "MLX 模型已下载" } } }
+    },
+    "MLX package required" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要 MLX 组件" } } }
+    },
+    "No dishes yet" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有菜品" } } }
+    },
+    "No meal history yet" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有用餐记录" } } }
+    },
+    "No menu data" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无菜单数据" } } }
+    },
+    "No menu data to analyze yet." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有可分析的菜单数据。" } } }
+    },
+    "No saved meals yet." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有保存的餐食。" } } }
+    },
+    "Nuts" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "坚果" } } }
+    },
+    "OK" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "好" } } }
+    },
+    "Ongoing Meal" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "进行中的用餐" } } }
+    },
+    "Open Camera" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开相机" } } }
+    },
+    "Order List" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点菜清单" } } }
+    },
+    "Pairing dishes from this menu just for you" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在用这份菜单为你专属搭配" } } }
+    },
+    "Password" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "密码" } } }
+    },
+    "Password must be at least 8 characters long" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "密码长度至少为 8 个字符" } } }
+    },
+    "Passwords do not match" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "两次输入的密码不一致" } } }
+    },
+    "Peanuts" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "花生" } } }
+    },
+    "Personal Info" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "个人信息" } } }
+    },
+    "Photo Preview" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "照片预览" } } }
+    },
+    "Platy" : {
+      "shouldTranslate" : false
+    },
+    "Platy Member" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Platy 会员" } } }
+    },
+    "Please confirm your password" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请确认密码" } } }
+    },
+    "Please enter the verification code" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入验证码" } } }
+    },
+    "Please enter your email" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入邮箱" } } }
+    },
+    "Please enter your password" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入密码" } } }
+    },
+    "Please sign in before saving preferences." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请先登录再保存偏好设置。" } } }
+    },
+    "Preferences" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "偏好设置" } } }
+    },
+    "Preferences saved." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "偏好已保存。" } } }
+    },
+    "Preparing local model" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在准备本地模型" } } }
+    },
+    "Preview" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "预览" } } }
+    },
+    "Processing..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "处理中…" } } }
+    },
+    "Putting a combo together…" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在搭配套餐…" } } }
+    },
+    "Recent Meals" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近用餐" } } }
+    },
+    "Region" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "地区" } } }
+    },
+    "Remember me" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "记住我" } } }
+    },
+    "Resend Code" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新发送验证码" } } }
+    },
+    "Retry" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试" } } }
+    },
+    "Save Options" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存选项" } } }
+    },
+    "Save Original Photos" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存原始照片" } } }
+    },
+    "Save Translated Menus" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存翻译菜单" } } }
+    },
+    "Saving" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存中" } } }
+    },
+    "Scan a menu and Platy will save the translation here." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "扫描菜单后，Platy 会把翻译保存在这里。" } } }
+    },
+    "Scanning" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "扫描" } } }
+    },
+    "Select Country" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择国家" } } }
+    },
+    "Sending..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发送中…" } } }
+    },
+    "Shellfish" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "贝类" } } }
+    },
+    "Side" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "配菜" } } }
+    },
+    "Sign In" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录" } } }
+    },
+    "Sign in failed: %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录失败：%@" } } }
+    },
+    "Sign in to continue your food journey" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录以继续你的美食之旅" } } }
+    },
+    "Sign Out" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出登录" } } }
+    },
+    "Sign Up" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册" } } }
+    },
+    "Sign up failed: %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册失败：%@" } } }
+    },
+    "Signed In" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已登录" } } }
+    },
+    "Signing In..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录中…" } } }
+    },
+    "Smart Filter Model" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "智能过滤模型" } } }
+    },
+    "Smart Menu Filter" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "智能菜单过滤" } } }
+    },
+    "Soy" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大豆" } } }
+    },
+    "Staple" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主食" } } }
+    },
+    "Start Exploring" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始探索" } } }
+    },
+    "Start your food journey" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启你的美食之旅" } } }
+    },
+    "Tap a translated dish on the menu, then save it here." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在菜单上点按翻译后的菜品，即可保存到这里。" } } }
+    },
+    "Thinking" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "思考中" } } }
+    },
+    "This will remove your saved email and password from this device." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这将从本设备移除已保存的邮箱和密码。" } } }
+    },
+    "Translate Menu" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "翻译菜单" } } }
+    },
+    "Translated menu" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "翻译菜单" } } }
+    },
+    "Translating" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "翻译中" } } }
+    },
+    "Try Again" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试" } } }
+    },
+    "Try Another Combo" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "换一套" } } }
+    },
+    "User Center" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "个人中心" } } }
+    },
+    "User ID: %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用户 ID：%@" } } }
+    },
+    "Usually includes" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通常包含" } } }
+    },
+    "Vegan" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "纯素" } } }
+    },
+    "Vegetarian" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "素食" } } }
+    },
+    "Verification" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证" } } }
+    },
+    "Verification code must be 6 digits" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证码必须是 6 位数字" } } }
+    },
+    "Verification code sent! Check your email." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证码已发送！请查看邮箱。" } } }
+    },
+    "Verification failed: %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证失败：%@" } } }
+    },
+    "Verify Account" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证账号" } } }
+    },
+    "Verify details with the restaurant before ordering." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下单前请与餐厅核实菜品信息。" } } }
+    },
+    "Verifying..." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "验证中…" } } }
+    },
+    "We sent a 6-digit verification code to %@" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们已向 %@ 发送 6 位验证码" } } }
+    },
+    "Welcome Back" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "欢迎回来" } } }
+    },
+    "Writing details" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在生成介绍" } } }
+    },
+    "Your translated menus and saved meals" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的翻译菜单与已存餐食" } } }
+    },
+    "%lld dishes ready to review." : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%lld 道菜待确认。" } } }
+    },
+    "%lld dishes saved" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已保存 %lld 道菜" } } }
+    },
+    "%lld pages translated" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已翻译 %lld 页" } } }
+    }
+  },
+  "version" : "1.0"
+}

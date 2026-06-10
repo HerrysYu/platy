@@ -101,27 +101,27 @@ struct SignUpPage: View {
 
     private func signUp() {
         guard !email.isEmpty else {
-            showAlert(message: "Please enter your email")
+            showAlert(message: String(localized: "Please enter your email"))
             return
         }
 
         guard !password.isEmpty else {
-            showAlert(message: "Please enter your password")
+            showAlert(message: String(localized: "Please enter your password"))
             return
         }
-        
+
         guard !confirmPassword.isEmpty else {
-            showAlert(message: "Please confirm your password")
+            showAlert(message: String(localized: "Please confirm your password"))
             return
         }
-        
+
         guard password == confirmPassword else {
-            showAlert(message: "Passwords do not match")
+            showAlert(message: String(localized: "Passwords do not match"))
             return
         }
-        
+
         guard password.count >= 8 else {
-            showAlert(message: "Password must be at least 8 characters long")
+            showAlert(message: String(localized: "Password must be at least 8 characters long"))
             return
         }
 
@@ -138,7 +138,7 @@ struct SignUpPage: View {
                 }
             case .failure(let error):
                 print("Sign up failed: \(error.localizedDescription)")
-                showAlert(message: "Sign up failed: \(error.localizedDescription)")
+                showAlert(message: String(localized: "Sign up failed: \(error.localizedDescription)"))
             }
         }
     }

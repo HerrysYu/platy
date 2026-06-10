@@ -53,7 +53,7 @@ struct DoneButton: View {
         }
     }
 
-    private func stateContent(icon: String, title: String) -> some View {
+    private func stateContent(icon: String, title: LocalizedStringKey) -> some View {
         HStack(spacing: 9) {
             Text(title)
                 .font(.system(size: 17, weight: .heavy, design: .rounded))

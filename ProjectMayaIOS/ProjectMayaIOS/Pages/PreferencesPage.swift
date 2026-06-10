@@ -6,7 +6,6 @@ struct PreferencesPage: View {
     @State private var selectedAllergens: Set<String> = []
     @State private var selectedDiets: Set<String> = []
     @State private var country = ""
-    @State private var systemLanguage = UserLanguagePreferences.defaultSystemLanguage
     @State private var menuLanguage = UserLanguagePreferences.defaultMenuLanguage
     @State private var isSaving = false
     @State private var message: String?
@@ -14,8 +13,7 @@ struct PreferencesPage: View {
     private let client = SupabaseClient()
     private let allergens = ["Gluten", "Dairy", "Nuts", "Peanuts", "Soy", "Eggs", "Shellfish", "Fish"]
     private let diets = ["Vegetarian", "Vegan", "Halal", "Kosher", "Alcohol-Free"]
-    private let systemLanguages = ["中文", "English"]
-    private let menuLanguages = ["English", "中文"]
+    private let menuLanguages = ["English", "中文", "日本語", "한국어", "Français", "Español", "Deutsch", "Italiano"]
     private let chipColumns = [GridItem(.adaptive(minimum: 116), spacing: 12)]
 
     var body: some View {
@@ -42,7 +40,6 @@ struct PreferencesPage: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
-            systemLanguage = UserLanguagePreferences.cachedSystemLanguage(userID: authService.currentUserID)
             menuLanguage = UserLanguagePreferences.cachedMenuLanguage(userID: authService.currentUserID)
         }
         .task {
@@ -96,12 +93,12 @@ struct PreferencesPage: View {
             PlatySectionLabel(title: "Language")
 
             PlatyCard {
-                VStack(spacing: 0) {
-                    pickerRow(title: "System", selection: $systemLanguage, options: systemLanguages)
-                    Divider().overlay(PlatyTheme.divider)
-                    pickerRow(title: "Menu", selection: $menuLanguage, options: menuLanguages)
-                }
+                menuLanguageRow
             }
+
+            Text("App language follows your iOS system setting.")
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(PlatyTheme.textTertiary)
         }
     }
 
@@ -128,7 +125,7 @@ struct PreferencesPage: View {
         .padding(.top, 24)
     }
 
-    private func chipSection(title: String, items: [String], selection: Binding<Set<String>>) -> some View {
+    private func chipSection(title: LocalizedStringKey, items: [String], selection: Binding<Set<String>>) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             PlatySectionLabel(title: title)
 
@@ -151,19 +148,20 @@ struct PreferencesPage: View {
         }
     }
 
-    private func pickerRow(title: String, selection: Binding<String>, options: [String]) -> some View {
+    private var menuLanguageRow: some View {
         HStack(spacing: 16) {
-            Text(title)
+            Text("Menu")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(PlatyTheme.textPrimary)
             Spacer()
-            Picker(title, selection: selection) {
-                ForEach(options, id: \.self) { option in
-                    Text(option).tag(option)
+            Picker("Menu", selection: $menuLanguage) {
+                ForEach(menuLanguages, id: \.self) { option in
+                    // Language names are endonyms; they stay as-is in every locale.
+                    Text(verbatim: option).tag(option)
                 }
             }
-            .pickerStyle(.segmented)
-            .frame(width: 174)
+            .pickerStyle(.menu)
+            .tint(PlatyTheme.accent)
         }
         .padding(.horizontal, 18)
         .frame(height: 64)
@@ -183,10 +181,9 @@ struct PreferencesPage: View {
             selectedAllergens = Set(profile.allergies ?? [])
             selectedDiets = Set(profile.dietaryPreferences ?? [])
             country = profile.country ?? ""
-            systemLanguage = profile.systemLanguage ?? systemLanguage
             menuLanguage = profile.menuLanguage ?? menuLanguage
             UserLanguagePreferences.cache(
-                systemLanguage: systemLanguage,
+                systemLanguage: UserLanguagePreferences.appLanguage,
                 menuLanguage: menuLanguage,
                 userID: userID
             )
@@ -201,7 +198,7 @@ struct PreferencesPage: View {
             let token = authService.getAuthToken(),
             let userID = authService.currentUserID
         else {
-            message = "Please sign in before saving preferences."
+            message = String(localized: "Please sign in before saving preferences.")
             return
         }
 
@@ -215,15 +212,15 @@ struct PreferencesPage: View {
                 allergies: Array(selectedAllergens).sorted(),
                 dietaryPreferences: Array(selectedDiets).sorted(),
                 country: country,
-                systemLanguage: systemLanguage,
+                systemLanguage: UserLanguagePreferences.appLanguage,
                 menuLanguage: menuLanguage
             )
             UserLanguagePreferences.cache(
-                systemLanguage: systemLanguage,
+                systemLanguage: UserLanguagePreferences.appLanguage,
                 menuLanguage: menuLanguage,
                 userID: userID
             )
-            message = "Preferences saved."
+            message = String(localized: "Preferences saved.")
         } catch {
             message = error.localizedDescription
         }
@@ -237,7 +234,8 @@ private struct ChipButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            // Stored values stay English for the backend; display is localized.
+            Text(LocalizedStringKey(title))
                 .font(.system(size: 17, weight: .bold, design: .rounded))
                 .foregroundStyle(isSelected ? .black : PlatyTheme.textPrimary)
                 .lineLimit(1)

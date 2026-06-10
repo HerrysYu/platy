@@ -8,7 +8,6 @@ struct UserCenterPage: View {
     @AppStorage(SmartMenuTextFilter.isEnabledKey) private var smartMenuFilterEnabled = false
     @StateObject private var smartFilterDownload = SmartMenuFilterDownloadModel()
     @State private var smartFilterModelReady = false
-    @State private var systemLanguage = UserLanguagePreferences.defaultSystemLanguage
     @State private var menuLanguage = UserLanguagePreferences.defaultMenuLanguage
 
     private var userLabel: String {
@@ -16,9 +15,9 @@ struct UserCenterPage: View {
             return email
         }
         if let userID = authService.currentUserID {
-            return "User ID: \(String(userID.uuidString.prefix(8)))"
+            return String(localized: "User ID: \(String(userID.uuidString.prefix(8)))")
         }
-        return "Signed In"
+        return String(localized: "Signed In")
     }
 
     var body: some View {
@@ -41,8 +40,8 @@ struct UserCenterPage: View {
                 settingsSection(
                     title: "Language",
                     rows: [
-                        SettingsRow(title: "System Language", value: systemLanguage, icon: "character.bubble"),
-                        SettingsRow(title: "Menu Language", value: menuLanguage, icon: "textformat")
+                        SettingsRow(title: "App Language", value: "Follow System", icon: "character.bubble"),
+                        SettingsRow(title: "Menu Language", value: LocalizedStringKey(menuLanguage), icon: "textformat")
                     ],
                     action: { navigateToPreferences = true }
                 )
@@ -211,7 +210,7 @@ struct UserCenterPage: View {
         )
     }
 
-    private var smartFilterSubtitle: String {
+    private var smartFilterSubtitle: LocalizedStringKey {
         if !SmartMenuTextFilter.isAvailable {
             return "MLX package required"
         }
@@ -242,26 +241,18 @@ struct UserCenterPage: View {
     }
 
     private func refreshCachedLanguagePreferences() {
-        systemLanguage = UserLanguagePreferences.cachedSystemLanguage(userID: authService.currentUserID)
         menuLanguage = UserLanguagePreferences.cachedMenuLanguage(userID: authService.currentUserID)
     }
 
     @MainActor
     private func refreshRemoteLanguagePreferences() async {
-        let resolvedSystemLanguage = await UserLanguagePreferences.resolveSystemLanguage(
+        menuLanguage = await UserLanguagePreferences.resolveMenuLanguage(
             authToken: authService.getAuthToken(),
             userID: authService.currentUserID
         )
-        let resolvedMenuLanguage = await UserLanguagePreferences.resolveMenuLanguage(
-            authToken: authService.getAuthToken(),
-            userID: authService.currentUserID
-        )
-
-        systemLanguage = resolvedSystemLanguage
-        menuLanguage = resolvedMenuLanguage
     }
 
-    private func settingsSection(title: String, rows: [SettingsRow], action: @escaping () -> Void) -> some View {
+    private func settingsSection(title: LocalizedStringKey, rows: [SettingsRow], action: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             PlatySectionLabel(title: title)
 
@@ -309,7 +300,7 @@ struct UserCenterPage: View {
         .contentShape(Rectangle())
     }
 
-    private func toggleRow(title: String, subtitle: String? = nil, isOn: Binding<Bool>, isDisabled: Bool = false) -> some View {
+    private func toggleRow(title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, isOn: Binding<Bool>, isDisabled: Bool = false) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -341,8 +332,8 @@ struct UserCenterPage: View {
 
 private struct SettingsRow: Identifiable {
     let id = UUID()
-    let title: String
-    let value: String
+    let title: LocalizedStringKey
+    let value: LocalizedStringKey
     let icon: String
 }
 
@@ -354,7 +345,7 @@ private struct SmartFilterModelDownloadSheet: View {
 
     @State private var isGlowing = false
 
-    private var title: String {
+    private var title: LocalizedStringKey {
         switch phase {
         case .failed:
             return "Download Failed"
@@ -363,14 +354,14 @@ private struct SmartFilterModelDownloadSheet: View {
         }
     }
 
-    private var subtitle: String {
+    private var subtitle: LocalizedStringKey {
         switch phase {
         case .downloading:
             return "Downloading Gemma 3 1B 4-bit"
         case .preparing:
             return "Preparing local model"
         case .failed(let message):
-            return message
+            return LocalizedStringKey(message)
         default:
             return "Download the local MLX model for menu cleanup."
         }
