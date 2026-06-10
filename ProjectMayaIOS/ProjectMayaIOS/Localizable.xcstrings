@@ -85,8 +85,8 @@
     "Cultural Background" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文化背景" } } }
     },
-    "Customize your dietary needs" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "定制你的饮食偏好" } } }
+    "Allergies, diets, and menu language" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "过敏原、饮食习惯与菜单语言" } } }
     },
     "Dairy" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "乳制品" } } }
@@ -238,8 +238,8 @@
     "Order List" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点菜清单" } } }
     },
-    "Pairing dishes from this menu just for you" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在用这份菜单为你专属搭配" } } }
+    "Based on this menu and your preferences" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "基于这份菜单与你的偏好" } } }
     },
     "Password" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "密码" } } }
@@ -295,8 +295,8 @@
     "Processing..." : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "处理中…" } } }
     },
-    "Putting a combo together…" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在搭配套餐…" } } }
+    "Building a combo" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在搭配套餐" } } }
     },
     "Recent Meals" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近用餐" } } }
@@ -349,8 +349,8 @@
     "Sign in failed: %@" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录失败：%@" } } }
     },
-    "Sign in to continue your food journey" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录以继续你的美食之旅" } } }
+    "Sign in to your account" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录你的账号" } } }
     },
     "Sign Out" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出登录" } } }
@@ -379,11 +379,11 @@
     "Staple" : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主食" } } }
     },
-    "Start Exploring" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始探索" } } }
+    "Save Preferences" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存偏好" } } }
     },
-    "Start your food journey" : {
-      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启你的美食之旅" } } }
+    "Save your menus and meals across devices" : {
+      "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在不同设备上保存你的菜单和用餐记录" } } }
     },
     "Tap a translated dish on the menu, then save it here." : {
       "localizations" : { "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在菜单上点按翻译后的菜品，即可保存到这里。" } } }

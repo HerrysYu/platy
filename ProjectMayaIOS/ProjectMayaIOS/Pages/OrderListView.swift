@@ -40,14 +40,13 @@ struct OrderListView: View {
             Image(systemName: "cart")
                 .font(.system(size: 54, weight: .semibold))
                 .foregroundColor(PlatyTheme.textSecondary)
-                .symbolEffect(.bounce, options: .repeating.speed(0.35))
 
             Text("No dishes yet")
-                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(PlatyTheme.textPrimary)
 
             Text("Tap a translated dish on the menu, then save it here.")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundColor(PlatyTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -80,12 +79,12 @@ private struct OrderCard: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(item.dish.name)
-                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(PlatyTheme.textPrimary)
                     .lineLimit(2)
 
                 Text(item.originalName)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundColor(PlatyTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -97,7 +96,7 @@ private struct OrderCard: View {
                     .disabled(item.quantity <= 1)
 
                 Text("\(item.quantity)")
-                    .font(.system(size: 18, weight: .heavy, design: .rounded).monospacedDigit())
+                    .font(.system(size: 18, weight: .semibold).monospacedDigit())
                     .foregroundColor(PlatyTheme.textPrimary)
                     .frame(minWidth: 22)
                     .contentTransition(.numericText())

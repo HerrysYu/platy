@@ -25,7 +25,7 @@ struct SignUpPage: View {
 
                 PlatyScreenHeader(
                     title: "Create Account",
-                    subtitle: "Start your food journey"
+                    subtitle: "Save your menus and meals across devices"
                 )
                 .platyEntrance()
 

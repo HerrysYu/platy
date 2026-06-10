@@ -169,14 +169,14 @@ struct PlatyScreenHeader: View {
     var body: some View {
         VStack(alignment: alignment, spacing: 10) {
             Text(title)
-                .font(.system(size: 42, weight: .heavy, design: .rounded))
+                .font(.system(size: 42, weight: .bold, design: .rounded))
                 .foregroundStyle(PlatyTheme.textPrimary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.74)
 
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(PlatyTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -205,7 +205,7 @@ struct PlatyPrimaryButton: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .font(.system(size: 20, weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
             }
@@ -271,7 +271,7 @@ struct PlatyInputField: View {
                         .autocorrectionDisabled()
                 }
             }
-            .font(.system(size: 18, weight: .semibold, design: .rounded))
+            .font(.system(size: 18, weight: .medium))
             .foregroundStyle(PlatyTheme.textPrimary)
         }
         .padding(.horizontal, 18)
@@ -308,7 +308,7 @@ struct PlatySectionLabel: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 23, weight: .heavy, design: .rounded))
+            .font(.system(size: 23, weight: .bold))
             .foregroundStyle(PlatyTheme.textPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

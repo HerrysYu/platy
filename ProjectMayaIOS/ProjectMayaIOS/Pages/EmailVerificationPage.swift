@@ -27,7 +27,6 @@ struct EmailVerificationPage: View {
                     Image(systemName: "envelope.badge.shield.half.filled")
                         .font(.system(size: 58, weight: .bold))
                         .foregroundColor(PlatyTheme.accent)
-                        .symbolEffect(.pulse, options: .repeating)
 
                     PlatyScreenHeader(
                         title: "Check Your Email",
@@ -41,7 +40,7 @@ struct EmailVerificationPage: View {
                         .keyboardType(.numberPad)
                         .autocorrectionDisabled()
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
                         .tracking(5)
                         .foregroundStyle(PlatyTheme.textPrimary)
                         .frame(maxWidth: .infinity)
@@ -70,7 +69,7 @@ struct EmailVerificationPage: View {
                         }
                         Text(authService.isLoading ? "Sending..." : "Resend Code")
                     }
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(PlatyTheme.accent)
                     .frame(maxWidth: .infinity)
                 }
@@ -84,7 +83,7 @@ struct EmailVerificationPage: View {
                     Text("Didn't receive the code?")
                     Text("Check your spam folder or try resending.")
                 }
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .regular))
                 .foregroundColor(PlatyTheme.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)

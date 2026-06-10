@@ -42,7 +42,7 @@ struct PhotoSelectionPage: View {
                 Spacer()
                 
                 Text("Photo Preview")
-                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(PlatyTheme.textPrimary)
                 
                 Spacer()
