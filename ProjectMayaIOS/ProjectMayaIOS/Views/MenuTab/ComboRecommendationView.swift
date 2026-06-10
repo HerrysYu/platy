@@ -48,13 +48,14 @@ struct ComboRecommendationView: View {
         statusMessage = ""
 
         guard !menuItems.isEmpty else {
-            phase = .failed("No menu data to analyze yet.")
+            phase = .failed(String(localized: "No menu data to analyze yet."))
             return
         }
 
         let token = authService.getAuthToken()
         let userID = authService.currentUserID
-        let language = UserLanguagePreferences.cachedSystemLanguage(userID: userID)
+        // The combo result language follows the app (iOS system) language.
+        let language = UserLanguagePreferences.appLanguage
 
         var preferences = ComboPreferences(allergies: [], diets: [], country: "", language: language)
         if let token, let userID,
@@ -275,7 +276,7 @@ private struct ComboThinkingView: View {
             }
 
             VStack(spacing: 10) {
-                Text(statusMessage.isEmpty ? "Putting a combo together…" : statusMessage)
+                Text(statusMessage.isEmpty ? String(localized: "Putting a combo together…") : statusMessage)
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(PlatyTheme.textPrimary)
                     .multilineTextAlignment(.center)
@@ -337,7 +338,7 @@ private struct ComboItemCard: View {
                         .foregroundStyle(PlatyTheme.textPrimary)
                         .lineLimit(2)
 
-                    Text(roleInfo.label)
+                    Text(LocalizedStringKey(roleInfo.label))
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(.black)
                         .padding(.horizontal, 8)

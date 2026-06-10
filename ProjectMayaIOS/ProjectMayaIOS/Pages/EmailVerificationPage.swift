@@ -5,6 +5,7 @@ struct EmailVerificationPage: View {
     @State private var verificationCode: String = ""
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
+    @State private var verificationSucceeded: Bool = false
     @State private var navigateToSignIn: Bool = false
     @Environment(\.dismiss) private var dismiss
     
@@ -96,7 +97,7 @@ struct EmailVerificationPage: View {
         }
         .navigationBarBackButtonHidden(false)
         .alert("Verification", isPresented: $showAlert) {
-            if alertMessage.contains("successful") {
+            if verificationSucceeded {
                 Button("Sign In") {
                     navigateToSignIn = true
                 }
@@ -110,12 +111,12 @@ struct EmailVerificationPage: View {
 
     private func verifyCode() {
         guard !verificationCode.isEmpty else {
-            showAlert(message: "Please enter the verification code")
+            showAlert(message: String(localized: "Please enter the verification code"))
             return
         }
-        
+
         guard verificationCode.count == 6 else {
-            showAlert(message: "Verification code must be 6 digits")
+            showAlert(message: String(localized: "Verification code must be 6 digits"))
             return
         }
 
@@ -124,26 +125,27 @@ struct EmailVerificationPage: View {
             case .success(let message):
                 print("Verification successful: \(message)")
                 DispatchQueue.main.async {
-                    self.showAlert(message: "Account verified successfully! You can now sign in.")
+                    self.verificationSucceeded = true
+                    self.showAlert(message: String(localized: "Account verified successfully! You can now sign in."))
                 }
             case .failure(let error):
                 print("Verification failed: \(error.localizedDescription)")
-                showAlert(message: "Verification failed: \(error.localizedDescription)")
+                showAlert(message: String(localized: "Verification failed: \(error.localizedDescription)"))
             }
         }
     }
-    
+
     private func resendCode() {
         authService.resendConfirmationCode(email: email) { result in
             switch result {
             case .success(let message):
                 print("Resend successful: \(message)")
                 DispatchQueue.main.async {
-                    self.showAlert(message: "Verification code sent! Check your email.")
+                    self.showAlert(message: String(localized: "Verification code sent! Check your email."))
                 }
             case .failure(let error):
                 print("Resend failed: \(error.localizedDescription)")
-                showAlert(message: "Failed to resend code: \(error.localizedDescription)")
+                showAlert(message: String(localized: "Failed to resend code: \(error.localizedDescription)"))
             }
         }
     }

@@ -245,7 +245,13 @@ final class TranslationService: ObservableObject {
         completion: @escaping (Result<OCRProcessingResponse, Error>) -> Void
     ) {
         let startedAt = Date()
-        let batches = ocrImageResult.ocrResults.chunked(size: batchSize)
+
+        // Blocks already written in the target language are skipped entirely:
+        // they are never sent to DeepL and never get an overlay box.
+        let resultsToTranslate = ocrImageResult.ocrResults.filter { result in
+            !MenuTextLanguageDetector.isText(result.text, alreadyIn: targetLanguage)
+        }
+        let batches = resultsToTranslate.chunked(size: batchSize)
 
         guard !batches.isEmpty else {
             completion(.success(OCRProcessingResponse(
@@ -301,14 +307,23 @@ final class TranslationService: ObservableObject {
         completion: @escaping (Result<[TranslatedTextBox], Error>) -> Void
     ) {
         let words = ocrResults.map(\.text)
+        let targetCode = deeplCode(for: targetLanguage)
 
-        invokeTranslationFunction(words: words, targetLanguage: deeplCode(for: targetLanguage)) { result in
+        invokeTranslationFunction(words: words, targetLanguage: targetCode) { result in
             switch result {
             case .success(let response):
-                let boxes = ocrResults.enumerated().map { index, result in
+                let boxes: [TranslatedTextBox] = ocrResults.enumerated().compactMap { index, result in
                     let translated = index < response.translations.count
                         ? response.translations[index]
                         : SupabaseTranslatedWord(detectedSourceLang: nil, text: result.text)
+
+                    // DeepL's own language detection is the safety net for
+                    // same-language text the local detector missed.
+                    let hasLetters = result.text.unicodeScalars.contains { CharacterSet.letters.contains($0) }
+                    if hasLetters,
+                       MenuTextLanguageDetector.detectedSource(translated.detectedSourceLang, matchesDeepLTarget: targetCode) {
+                        return nil
+                    }
 
                     return TranslatedTextBox(
                         x: Double(result.boundingBox.x),
@@ -406,6 +421,8 @@ final class TranslationService: ObservableObject {
             return "ES"
         case "german", "deutsch", "de":
             return "DE"
+        case "italian", "italiano", "it":
+            return "IT"
         default:
             return language.uppercased()
         }
