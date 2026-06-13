@@ -1,8 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
-    "%lld" : {},
+    "" : {
+
+    },
+    "%lld" : {
+
+    },
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -213,6 +217,7 @@
       }
     },
     "App Language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -229,6 +234,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "应用语言跟随 iOS 系统设置。"
+          }
+        }
+      }
+    },
+    "App language follows your system settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用语言跟随系统设置。"
           }
         }
       }

@@ -11,7 +11,7 @@
 # CocoaPods
 Pods/
 
-# Carthage
+# Carthage  
 Carthage/Build/
 
 # Fastlane
