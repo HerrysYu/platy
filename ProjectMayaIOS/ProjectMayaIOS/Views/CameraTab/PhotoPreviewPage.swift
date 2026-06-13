@@ -138,32 +138,22 @@ struct DoneButton: View {
             }
             
             print("✅ Local OCR completed for image \(index + 1). Found \(ocrImageResult.ocrResults.count) text blocks")
-            
-            Task {
-                let imageSize = CGSize(width: ocrImageResult.imageWidth, height: ocrImageResult.imageHeight)
-                let filterResult = await SmartMenuTextFilter.current().filter(ocrImageResult.ocrResults, imageSize: imageSize)
-                let filteredOCRResult = ocrImageResult.applying(results: filterResult.overlayResults)
 
-                print("🧠 Smart filter kept \(filterResult.kept.count), uncertain \(filterResult.uncertain.count), dropped \(filterResult.dropped.count) for image \(index + 1)")
+            // Step 2: Send OCR results straight to translation.
+            let translationService = TranslationService(authService: self.authService)
+            print("🌐 Starting translation for image \(index + 1) to \(targetLanguage)...")
 
-                await MainActor.run {
-                    // Step 2: Send OCR results for translation - create fresh service instance
-                    let translationService = TranslationService(authService: self.authService)
-                    print("🌐 Starting translation for image \(index + 1) to \(targetLanguage)...")
-
-                    translationService.processOCRResults(ocrImageResult: filteredOCRResult, targetLanguage: targetLanguage) { result in
-                        switch result {
-                        case .success(let response):
-                            print("✅ Image \(index + 1) translation SUCCESS - received \(response.boxes.count) translated boxes")
-                            let menuBlock = self.convertOCRProcessingToMenuBlocks(result)
-                            print("🎯 Image \(index + 1) final blocks: \(menuBlock.blockList.blocks?.count ?? 0)")
-                            completion(menuImage, menuBlock)
-                        case .failure(let error):
-                            print("❌ Image \(index + 1) translation FAILED: \(error.localizedDescription)")
-                            let fallbackBlocks = self.convertOCRToMenuBlocks(filteredOCRResult)
-                            completion(menuImage, fallbackBlocks)
-                        }
-                    }
+            translationService.processOCRResults(ocrImageResult: ocrImageResult, targetLanguage: targetLanguage) { result in
+                switch result {
+                case .success(let response):
+                    print("✅ Image \(index + 1) translation SUCCESS - received \(response.boxes.count) translated boxes")
+                    let menuBlock = self.convertOCRProcessingToMenuBlocks(result)
+                    print("🎯 Image \(index + 1) final blocks: \(menuBlock.blockList.blocks?.count ?? 0)")
+                    completion(menuImage, menuBlock)
+                case .failure(let error):
+                    print("❌ Image \(index + 1) translation FAILED: \(error.localizedDescription)")
+                    let fallbackBlocks = self.convertOCRToMenuBlocks(ocrImageResult)
+                    completion(menuImage, fallbackBlocks)
                 }
             }
         }
@@ -303,31 +293,6 @@ func testTranslation(images: [UIImage], authService: AuthService) {
     }
 }
 
-struct ButtonsAtTop: View {
-    let dismiss: DismissAction
-    let onReTake: () -> Void
-    var body: some View {
-        HStack {
-            PlatyIconButton(systemName: "chevron.left", size: 52) {
-                onReTake()
-                dismiss()
-            }
-
-            Spacer()
-
-            Text("Preview")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.black.opacity(0.46))
-                .clipShape(Capsule())
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 58)
-    }
-}
-
 struct PhotoPreviewPage: View {
     @State var image: UIImage
     @StateObject var tm: TranslationModel = translationModelGlobal
@@ -335,71 +300,155 @@ struct PhotoPreviewPage: View {
     @ObservedObject var authService: AuthService
     @Environment(\.dismiss) private var dismiss
     @State private var imageSettled = false
-    
+    @State private var selectedIndex = 0
+
     init(image: UIImage, vm: CameraViewModel, authService: AuthService) {
         self.image = image
         self.vm = vm
         self.authService = authService
     }
-    
+
+    /// The image currently shown large. Falls back to the passed-in capture
+    /// if the index drifts out of range (e.g. right after a delete).
+    private var currentImage: UIImage {
+        guard vm.capturedImages.indices.contains(selectedIndex) else {
+            return vm.capturedImages.last ?? image
+        }
+        return vm.capturedImages[selectedIndex]
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 PlatyTheme.background.ignoresSafeArea()
 
-                // The captured photo "lands" into place: slight scale-down
-                // settle instead of the old fade+slide double animation.
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-                    .shadow(color: .black.opacity(0.45), radius: 26, y: 12)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 104)
-                    .scaleEffect(imageSettled ? 1 : 1.05)
-                    .opacity(imageSettled ? 1 : 0)
+                VStack(spacing: 0) {
+                    header
+                        .padding(.horizontal, 24)
+                        .padding(.top, 58)
 
-                VStack {
-                    ButtonsAtTop(dismiss: dismiss, onReTake: {
-                        if !vm.capturedImages.isEmpty {
-                            vm.capturedImages.removeLast()
-                        }
-                    })
+                    // The captured photo "lands" into place.
+                    Image(uiImage: currentImage)
+                        .resizable()
+                        .scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                        .shadow(color: .black.opacity(0.45), radius: 26, y: 12)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 18)
+                        .id(selectedIndex)
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        .scaleEffect(imageSettled ? 1 : 1.05)
+                        .opacity(imageSettled ? 1 : 0)
+                        .frame(maxHeight: .infinity)
 
-                    Spacer()
+                    thumbnailStrip
 
-                    HStack(spacing: 16) {
-                        Button(action: {
-                            dismiss()
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus")
-                                Text("Add Page")
-                            }
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(height: 52)
-                            .padding(.horizontal, 18)
-                            .background(PlatyTheme.surfaceRaised)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(PlatyTheme.border, lineWidth: 1))
-                        }
-                        .buttonStyle(PlatyPressStyle())
-
-                        Spacer()
-
-                        DoneButton(images: vm.capturedImages, authService: authService)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 44)
-                    .platyEntrance(delay: 0.08)
+                    DoneButton(images: vm.capturedImages, authService: authService)
+                        .padding(.top, 6)
+                        .padding(.bottom, 40)
+                        .platyEntrance(delay: 0.08)
                 }
             }
         }
         .onAppear {
+            selectedIndex = max(0, vm.capturedImages.count - 1)
             withAnimation(PlatyMotion.softSpring.delay(0.04)) {
                 imageSettled = true
             }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            PlatyIconButton(systemName: "chevron.left", size: 52) {
+                dismiss()
+            }
+
+            Spacer()
+
+            Text("\(vm.capturedImages.count) page\(vm.capturedImages.count == 1 ? "" : "s")")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.black.opacity(0.46))
+                .clipShape(Capsule())
+                .contentTransition(.numericText())
+        }
+    }
+
+    private var thumbnailStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 14) {
+                ForEach(vm.capturedImages.indices, id: \.self) { index in
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: vm.capturedImages[index])
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 72, height: 72)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(
+                                        selectedIndex == index ? PlatyTheme.accent : PlatyTheme.border,
+                                        lineWidth: selectedIndex == index ? 3 : 1
+                                    )
+                            )
+                            .onTapGesture {
+                                withAnimation(PlatyMotion.spring) {
+                                    selectedIndex = index
+                                }
+                            }
+
+                        Button {
+                            deletePage(at: index)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.white, Color.black.opacity(0.65))
+                        }
+                        .offset(x: 7, y: -7)
+                    }
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+
+                Button {
+                    // Return to the camera to capture another page; the new
+                    // shot re-presents this preview with the page appended.
+                    dismiss()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(PlatyTheme.accent)
+                        .frame(width: 72, height: 72)
+                        .background(PlatyTheme.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(PlatyTheme.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlatyPressStyle())
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .animation(PlatyMotion.softSpring, value: vm.capturedImages.count)
+        }
+    }
+
+    private func deletePage(at index: Int) {
+        withAnimation(PlatyMotion.spring) {
+            guard vm.capturedImages.indices.contains(index) else { return }
+            vm.capturedImages.remove(at: index)
+
+            if vm.capturedImages.isEmpty {
+                // Nothing left to preview: go back to the camera.
+                dismiss()
+                return
+            }
+
+            selectedIndex = min(selectedIndex, vm.capturedImages.count - 1)
         }
     }
 }

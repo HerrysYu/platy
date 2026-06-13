@@ -37,6 +37,16 @@
         }
       }
     },
+    "%lld page%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld page%2$@"
+          }
+        }
+      }
+    },
     "%lld pages translated" : {
       "localizations" : {
         "zh-Hans" : {
@@ -88,6 +98,7 @@
       }
     },
     "Add Page" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -172,6 +183,7 @@
       }
     },
     "Allergies, diets, and menu language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -202,6 +214,7 @@
       }
     },
     "App language follows your iOS system setting." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -292,6 +305,7 @@
       }
     },
     "Close" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -324,6 +338,9 @@
         }
       }
     },
+    "Couldn't save" : {
+
+    },
     "Create Account" : {
       "localizations" : {
         "zh-Hans" : {
@@ -355,6 +372,7 @@
       }
     },
     "Cultural Background" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -427,6 +445,7 @@
       }
     },
     "Download" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -437,6 +456,7 @@
       }
     },
     "Download Failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -447,6 +467,7 @@
       }
     },
     "Download local MLX model" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -457,6 +478,7 @@
       }
     },
     "Download the local MLX model for menu cleanup." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -467,6 +489,7 @@
       }
     },
     "Downloading %lld%%" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -477,6 +500,7 @@
       }
     },
     "Downloading Gemma 3 1B 4-bit" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -498,6 +522,7 @@
       }
     },
     "e.g. China, USA..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -508,6 +533,7 @@
       }
     },
     "Edit Preferences" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -580,6 +606,7 @@
       }
     },
     "Follow System" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -622,6 +649,7 @@
       }
     },
     "I am allergic to:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -632,6 +660,7 @@
       }
     },
     "I follow these diets:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -694,6 +723,7 @@
       }
     },
     "Manage" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -714,6 +744,7 @@
       }
     },
     "Menu" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -754,6 +785,7 @@
       }
     },
     "MLX model downloaded" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -764,6 +796,7 @@
       }
     },
     "MLX package required" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -916,6 +949,7 @@
       }
     },
     "Personal Info" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -989,6 +1023,7 @@
       }
     },
     "Please sign in before saving preferences." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -999,6 +1034,7 @@
       }
     },
     "Preferences" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1009,6 +1045,7 @@
       }
     },
     "Preferences saved." : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1019,6 +1056,7 @@
       }
     },
     "Preparing local model" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1029,6 +1067,7 @@
       }
     },
     "Preview" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1119,6 +1158,7 @@
       }
     },
     "Save Preferences" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1148,7 +1188,11 @@
         }
       }
     },
+    "Saved" : {
+
+    },
     "Saving" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1169,6 +1213,7 @@
       }
     },
     "Scanning" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1301,6 +1346,7 @@
       }
     },
     "Smart Filter Model" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1311,6 +1357,7 @@
       }
     },
     "Smart Menu Filter" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {

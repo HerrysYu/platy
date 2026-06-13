@@ -76,6 +76,13 @@ cd /Users/herrysyu/Documents/platy/ProjectMayaIOS && xcodebuild -project Project
 - [x] R3-7 zoom 卡顿:`OCROverlayViewModel` 增加 isPinching;pinch 期间整个标签层从视图树移除(不再逐帧测量全部标签),结束 0.14s 淡回;删掉标签层随 scale 的 softSpring 逐帧动画
 - [x] R3-8 防误触:viewModel 发布 isZoomedIn(scale > fitted+0.01),经 onZoomChange 回调上抛到 MenuPage,TabView `.scrollDisabled(isZoomedIn)`,放大平移不再误翻页
 
+## Round 4(2026-06-14 用户追加)checklist — ✅ 全部完成,BUILD SUCCEEDED
+- [x] R4-1 多菜单拍照逻辑重设计:PhotoPreviewPage 重写为 header(页数) + 大图(按 selectedIndex)+ 缩略图条(每张可 × 删除、点选切换大图)+ 末尾 + 加页 + Translate。真值 vm.capturedImages;删空自动 dismiss 回相机。删除无用的 ButtonsAtTop
+- [x] R4-2 相机页去掉 "Platy" + "Menu Lens"(删 topBar 视图与属性)
+- [x] R4-3 相机页扫描框放大(FocusFrame 横向 padding 30→16)
+- [x] R4-4a 设置页(UserCenterPage)整页重写为内联编辑:Region 内联 TextField(已选显示真实值,空显示 "Select Country" 占位)+ 过敏原/饮食 chips + App/Menu 语言 segmented,改动经 UserSettingsViewModel(@StateObject,600ms 防抖)自动 upsert Supabase,顶部显示 saving/Saved。删除跳转 PreferencesPage;PreferencesPage.swift 已删(无其他引用)
+- [x] R4-4b 移除 smart filter:删 Services/SmartMenuTextFilter.swift + Services/MLXSmartMenuTextFilter.swift;PhotoPreviewPage.processSingleImage 去掉过滤直接用 OCR;UserCenterPage 清掉全部 smart filter 代码。**并从 pbxproj 移除 SPM 依赖**(mlx-swift-lm/swift-transformers/swift-huggingface 及 MLXLLM/MLXLMCommon/MLXHuggingFace/HuggingFace/Tokenizers 五个 product),构建确认 mlx bundle 已从 app 移除。pbxproj 备份在 /tmp/project.pbxproj.bak
+
 ## 当前状态
 ✅ **全部完成(2026-06-10)**。云端已部署并通过流式/非流式冒烟测试;iOS 编译通过。
 剩余可选项(未做,按需):真机端到端走查 UI;删除冒烟测试用户 combo-smoke-test-20260610@example.com(Supabase Dashboard → Auth)。
