@@ -2,13 +2,15 @@ import SwiftUI
 
 struct UserCenterPage: View {
     @ObservedObject var authService: AuthService
-    @State private var navigateToPreferences = false
+    @StateObject private var settings = UserSettingsViewModel()
     @State private var saveOriginalPhotos = true
     @State private var saveTranslatedMenus = true
-    @AppStorage(SmartMenuTextFilter.isEnabledKey) private var smartMenuFilterEnabled = false
-    @StateObject private var smartFilterDownload = SmartMenuFilterDownloadModel()
-    @State private var smartFilterModelReady = false
-    @State private var menuLanguage = UserLanguagePreferences.defaultMenuLanguage
+
+    private let allergens = ["Gluten", "Dairy", "Nuts", "Peanuts", "Soy", "Eggs", "Shellfish", "Fish"]
+    private let diets = ["Vegetarian", "Vegan", "Halal", "Kosher", "Alcohol-Free"]
+    private let systemLanguages = ["中文", "English"]
+    private let menuLanguages = ["English", "中文"]
+    private let chipColumns = [GridItem(.adaptive(minimum: 112), spacing: 12)]
 
     private var userLabel: String {
         if let email = authService.currentUser, !email.isEmpty {
@@ -26,32 +28,28 @@ struct UserCenterPage: View {
                 profileCard
                     .platyEntrance()
 
-                settingsSection(
-                    title: "Personal Info",
-                    rows: [
-                        SettingsRow(title: "Region", value: "Select Country", icon: "globe.asia.australia"),
-                        SettingsRow(title: "Dietary", value: "Edit Preferences", icon: "fork.knife"),
-                        SettingsRow(title: "Allergens", value: "Manage", icon: "exclamationmark.shield")
-                    ],
-                    action: { navigateToPreferences = true }
-                )
-                .platyEntrance(delay: 0.07)
+                regionSection
+                    .platyEntrance(delay: 0.05)
 
-                settingsSection(
-                    title: "Language",
-                    rows: [
-                        SettingsRow(title: "App Language", value: "Follow System", icon: "character.bubble"),
-                        SettingsRow(title: "Menu Language", value: LocalizedStringKey(menuLanguage), icon: "textformat")
-                    ],
-                    action: { navigateToPreferences = true }
+                chipSection(
+                    title: "Allergens",
+                    items: allergens,
+                    selection: $settings.allergens
                 )
-                .platyEntrance(delay: 0.14)
+                .platyEntrance(delay: 0.1)
+
+                chipSection(
+                    title: "Dietary",
+                    items: diets,
+                    selection: $settings.diets
+                )
+                .platyEntrance(delay: 0.15)
+
+                languageSection
+                    .platyEntrance(delay: 0.2)
 
                 saveSection
-                    .platyEntrance(delay: 0.21)
-
-                scanSection
-                    .platyEntrance(delay: 0.28)
+                    .platyEntrance(delay: 0.25)
 
                 Button(role: .destructive) {
                     authService.signOut()
@@ -70,7 +68,7 @@ struct UserCenterPage: View {
                 }
                 .buttonStyle(PlatyPressStyle())
                 .padding(.top, 6)
-                .platyEntrance(delay: 0.35)
+                .platyEntrance(delay: 0.3)
             }
             .padding(.horizontal, 24)
             .padding(.top, 26)
@@ -80,41 +78,35 @@ struct UserCenterPage: View {
         .navigationTitle("User Center")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .navigationDestination(isPresented: $navigateToPreferences) {
-            PreferencesPage(authService: authService)
-        }
-        .task {
-            refreshCachedLanguagePreferences()
-            await refreshSmartFilterReadiness()
-            await refreshRemoteLanguagePreferences()
-        }
-        .onChange(of: navigateToPreferences) { _, isPresented in
-            if !isPresented {
-                refreshCachedLanguagePreferences()
-                Task { await refreshRemoteLanguagePreferences() }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if settings.isSaving {
+                    ProgressView().tint(PlatyTheme.accent)
+                } else if settings.savedRecently {
+                    HStack(spacing: 5) {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Saved")
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(PlatyTheme.accent)
+                    .transition(.opacity)
+                }
             }
         }
-        .sheet(isPresented: smartFilterDownloadSheetBinding) {
-            SmartFilterModelDownloadSheet(
-                phase: smartFilterDownload.phase,
-                progress: smartFilterDownload.progress,
-                onCancel: {
-                    smartFilterDownload.cancel()
-                },
-                onDownload: {
-                smartFilterDownload.beginDownload(
-                    isEnabled: $smartMenuFilterEnabled,
-                    onReady: {
-                        smartFilterModelReady = true
-                    }
-                )
-                }
-            )
-            .presentationDetents([.height(356)])
-            .presentationDragIndicator(.visible)
-            .interactiveDismissDisabled(false)
+        .task {
+            await settings.load(authService: authService)
+        }
+        .alert("Couldn't save", isPresented: Binding(
+            get: { settings.errorMessage != nil },
+            set: { if !$0 { settings.errorMessage = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(settings.errorMessage ?? "")
         }
     }
+
+    // MARK: - Profile
 
     private var profileCard: some View {
         PlatyCard {
@@ -150,6 +142,118 @@ struct UserCenterPage: View {
         }
     }
 
+    // MARK: - Region (inline)
+
+    private var regionSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            PlatySectionLabel(title: "Region")
+
+            HStack(spacing: 14) {
+                Image(systemName: "globe.asia.australia")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(PlatyTheme.accent)
+                    .frame(width: 28)
+
+                // Shows the saved region once chosen; placeholder otherwise.
+                TextField(
+                    "",
+                    text: $settings.country,
+                    prompt: Text("Select Country").foregroundStyle(PlatyTheme.textTertiary)
+                )
+                .textInputAutocapitalization(.words)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(PlatyTheme.textPrimary)
+                .submitLabel(.done)
+                .onSubmit { settings.scheduleSave(authService: authService) }
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 64)
+            .background(PlatyTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(PlatyTheme.border, lineWidth: 1)
+            )
+        }
+    }
+
+    // MARK: - Chips (inline allergens / diets)
+
+    private func chipSection(title: LocalizedStringKey, items: [String], selection: Binding<Set<String>>) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            PlatySectionLabel(title: title)
+
+            LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 12) {
+                ForEach(items, id: \.self) { item in
+                    let isSelected = selection.wrappedValue.contains(item)
+                    Button {
+                        withAnimation(PlatyMotion.spring) {
+                            if isSelected {
+                                selection.wrappedValue.remove(item)
+                            } else {
+                                selection.wrappedValue.insert(item)
+                            }
+                        }
+                        settings.scheduleSave(authService: authService)
+                    } label: {
+                        Text(LocalizedStringKey(item))
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(isSelected ? .black : PlatyTheme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 46)
+                            .background(isSelected ? PlatyTheme.accent : PlatyTheme.surface)
+                            .overlay(
+                                Capsule().stroke(isSelected ? PlatyTheme.accent : PlatyTheme.border, lineWidth: 1.2)
+                            )
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlatyPressStyle())
+                }
+            }
+        }
+    }
+
+    // MARK: - Language (inline pickers)
+
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            PlatySectionLabel(title: "Language")
+
+            PlatyCard {
+                VStack(spacing: 0) {
+                    pickerRow(title: "App Language", selection: $settings.systemLanguage, options: systemLanguages)
+                    Divider().overlay(PlatyTheme.divider)
+                    pickerRow(title: "Menu Language", selection: $settings.menuLanguage, options: menuLanguages)
+                }
+            }
+        }
+    }
+
+    private func pickerRow(title: LocalizedStringKey, selection: Binding<String>, options: [String]) -> some View {
+        HStack(spacing: 16) {
+            Text(title)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(PlatyTheme.textPrimary)
+            Spacer()
+            Picker(title, selection: selection) {
+                ForEach(options, id: \.self) { option in
+                    Text(option).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 168)
+            .onChange(of: selection.wrappedValue) { _, _ in
+                settings.scheduleSave(authService: authService)
+            }
+        }
+        .padding(.horizontal, 18)
+        .frame(height: 64)
+    }
+
+    // MARK: - Save options (local toggles)
+
     private var saveSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             PlatySectionLabel(title: "Save Options")
@@ -164,346 +268,117 @@ struct UserCenterPage: View {
         }
     }
 
-    private var scanSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            PlatySectionLabel(title: "Scanning")
-
-            PlatyCard {
-                VStack(spacing: 0) {
-                    toggleRow(
-                        title: "Smart Menu Filter",
-                        subtitle: smartFilterSubtitle,
-                        isOn: smartFilterBinding,
-                        isDisabled: smartFilterDownload.isBusy
-                    )
-                }
-            }
-        }
-    }
-
-    private var smartFilterBinding: Binding<Bool> {
-        Binding(
-            get: { smartMenuFilterEnabled },
-            set: { newValue in
-                if newValue {
-                    smartFilterDownload.requestEnable(
-                        isEnabled: $smartMenuFilterEnabled,
-                        modelReady: smartFilterModelReady
-                    )
-                } else {
-                    withAnimation(PlatyMotion.spring) {
-                        smartMenuFilterEnabled = false
-                    }
-                }
-            }
-        )
-    }
-
-    private var smartFilterDownloadSheetBinding: Binding<Bool> {
-        Binding(
-            get: { smartFilterDownload.isPresented },
-            set: { isPresented in
-                if !isPresented {
-                    smartFilterDownload.cancel()
-                }
-            }
-        )
-    }
-
-    private var smartFilterSubtitle: LocalizedStringKey {
-        if !SmartMenuTextFilter.isAvailable {
-            return "MLX package required"
-        }
-        switch smartFilterDownload.phase {
-        case .downloading:
-            return "Downloading \(Int(smartFilterDownload.progress * 100))%"
-        case .preparing:
-            return "Preparing local model"
-        case .idle, .confirming, .ready, .failed:
-            break
-        }
-        if smartFilterModelReady {
-            return "MLX model downloaded"
-        }
-        return "Download local MLX model"
-    }
-
-    private func refreshSmartFilterReadiness() async {
-        guard SmartMenuTextFilter.isAvailable else {
-            smartFilterModelReady = false
-            return
-        }
-
-        let isReady = await Task.detached(priority: .utility) {
-            SmartMenuTextFilter.isModelReady
-        }.value
-        smartFilterModelReady = isReady
-    }
-
-    private func refreshCachedLanguagePreferences() {
-        menuLanguage = UserLanguagePreferences.cachedMenuLanguage(userID: authService.currentUserID)
-    }
-
-    @MainActor
-    private func refreshRemoteLanguagePreferences() async {
-        menuLanguage = await UserLanguagePreferences.resolveMenuLanguage(
-            authToken: authService.getAuthToken(),
-            userID: authService.currentUserID
-        )
-    }
-
-    private func settingsSection(title: LocalizedStringKey, rows: [SettingsRow], action: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            PlatySectionLabel(title: title)
-
-            PlatyCard {
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        Button(action: action) {
-                            settingsRow(row)
-                        }
-                        .buttonStyle(PlatyPressStyle())
-
-                        if index < rows.count - 1 {
-                            Divider().overlay(PlatyTheme.divider)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func settingsRow(_ row: SettingsRow) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: row.icon)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(PlatyTheme.accent)
-                .frame(width: 28)
-
-            Text(row.title)
+    private func toggleRow(title: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(PlatyTheme.textPrimary)
-
-            Spacer()
-
-            Text(row.value)
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(PlatyTheme.textSecondary)
                 .lineLimit(1)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(PlatyTheme.textTertiary)
-        }
-        .padding(.horizontal, 18)
-        .frame(height: 64)
-        .contentShape(Rectangle())
-    }
-
-    private func toggleRow(title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil, isOn: Binding<Bool>, isDisabled: Bool = false) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(PlatyTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(PlatyTheme.textTertiary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
-            }
+                .minimumScaleFactor(0.75)
 
             Spacer()
             Toggle("", isOn: isOn.animation(PlatyMotion.spring))
                 .labelsHidden()
                 .tint(PlatyTheme.accent)
-                .disabled(isDisabled)
         }
         .padding(.horizontal, 18)
         .frame(height: 64)
-        .opacity(isDisabled ? 0.72 : 1)
     }
 }
 
-private struct SettingsRow: Identifiable {
-    let id = UUID()
-    let title: LocalizedStringKey
-    let value: LocalizedStringKey
-    let icon: String
-}
+/// Holds the editable profile so debounced auto-save always reads the latest
+/// values (a struct View captured into a Task would see a stale snapshot).
+@MainActor
+final class UserSettingsViewModel: ObservableObject {
+    @Published var allergens: Set<String> = []
+    @Published var diets: Set<String> = []
+    @Published var country: String = ""
+    @Published var systemLanguage = UserLanguagePreferences.defaultSystemLanguage
+    @Published var menuLanguage = UserLanguagePreferences.defaultMenuLanguage
+    @Published var isSaving = false
+    @Published var savedRecently = false
+    @Published var errorMessage: String?
 
-private struct SmartFilterModelDownloadSheet: View {
-    let phase: SmartMenuFilterDownloadModel.Phase
-    let progress: Double
-    let onCancel: () -> Void
-    let onDownload: () -> Void
+    private let client = SupabaseClient()
+    private var loaded = false
+    private var saveTask: Task<Void, Never>?
 
-    @State private var isGlowing = false
+    func load(authService: AuthService) async {
+        systemLanguage = UserLanguagePreferences.cachedSystemLanguage(userID: authService.currentUserID)
+        menuLanguage = UserLanguagePreferences.cachedMenuLanguage(userID: authService.currentUserID)
 
-    private var title: LocalizedStringKey {
-        switch phase {
-        case .failed:
-            return "Download Failed"
-        default:
-            return "Smart Filter Model"
+        guard
+            let token = authService.getAuthToken(),
+            let userID = authService.currentUserID
+        else {
+            loaded = true
+            return
         }
-    }
 
-    private var subtitle: LocalizedStringKey {
-        switch phase {
-        case .downloading:
-            return "Downloading Gemma 3 1B 4-bit"
-        case .preparing:
-            return "Preparing local model"
-        case .failed(let message):
-            return LocalizedStringKey(message)
-        default:
-            return "Download the local MLX model for menu cleanup."
-        }
-    }
-
-    private var progressText: String {
-        "\(Int(min(max(progress, 0), 1) * 100))%"
-    }
-
-    var body: some View {
-        ZStack {
-            PlatyTheme.background.ignoresSafeArea()
-
-            VStack(spacing: 22) {
-                modelGlyph
-
-                VStack(spacing: 8) {
-                    Text(title)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(PlatyTheme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-
-                    Text(subtitle)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundStyle(phase.isFailure ? PlatyTheme.danger : PlatyTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.78)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if phase.isBusy {
-                    progressBar
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                HStack(spacing: 12) {
-                    Button(action: onCancel) {
-                        Text(phase.isFailure ? "Close" : "Cancel")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(PlatyTheme.textPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(PlatyTheme.surfaceRaised)
-                            .clipShape(Capsule())
-                            .overlay(Capsule().stroke(PlatyTheme.border, lineWidth: 1))
-                    }
-                    .buttonStyle(PlatyPressStyle())
-
-                    Button(action: onDownload) {
-                        HStack(spacing: 8) {
-                            if phase.isBusy {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.black)
-                            } else {
-                                Image(systemName: "arrow.down.circle.fill")
-                            }
-
-                            Text(phase.isFailure ? "Retry" : "Download")
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.78)
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(PlatyTheme.accent.opacity(phase.isBusy ? 0.58 : 1))
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(PlatyPressStyle())
-                    .disabled(phase.isBusy)
-                }
+        do {
+            if let profile = try await client.fetchProfile(authToken: token, userID: userID) {
+                allergens = Set(profile.allergies ?? [])
+                diets = Set(profile.dietaryPreferences ?? [])
+                country = profile.country ?? ""
+                systemLanguage = profile.systemLanguage ?? systemLanguage
+                menuLanguage = profile.menuLanguage ?? menuLanguage
+                UserLanguagePreferences.cache(
+                    systemLanguage: systemLanguage,
+                    menuLanguage: menuLanguage,
+                    userID: userID
+                )
             }
-            .padding(24)
+        } catch {
+            print("⚠️ Failed to load profile: \(error.localizedDescription)")
         }
-        .onAppear {
-            withAnimation(PlatyMotion.scan.repeatForever(autoreverses: true)) {
-                isGlowing = true
-            }
+
+        loaded = true
+    }
+
+    /// Debounced save so rapid chip taps / picker flips coalesce into one write.
+    func scheduleSave(authService: AuthService) {
+        guard loaded else { return }
+        saveTask?.cancel()
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            guard !Task.isCancelled else { return }
+            await self?.save(authService: authService)
         }
     }
 
-    private var modelGlyph: some View {
-        ZStack {
-            Circle()
-                .fill(PlatyTheme.accent.opacity(isGlowing ? 0.26 : 0.1))
-                .frame(width: 86, height: 86)
-                .blur(radius: isGlowing ? 10 : 3)
-
-            Circle()
-                .fill(PlatyTheme.surface)
-                .frame(width: 74, height: 74)
-                .overlay(Circle().stroke(PlatyTheme.border, lineWidth: 1))
-
-            Image(systemName: phase.isFailure ? "exclamationmark.triangle.fill" : "sparkles")
-                .font(.system(size: 28, weight: .heavy))
-                .foregroundStyle(phase.isFailure ? PlatyTheme.danger : PlatyTheme.accent)
-                .symbolEffect(.pulse, options: .repeating, value: phase.isBusy)
+    private func save(authService: AuthService) async {
+        guard
+            let token = authService.getAuthToken(),
+            let userID = authService.currentUserID
+        else {
+            return
         }
-    }
 
-    private var progressBar: some View {
-        VStack(spacing: 9) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(PlatyTheme.surfaceRaised)
+        isSaving = true
+        defer { isSaving = false }
 
-                    Capsule()
-                        .fill(PlatyTheme.accent)
-                        .frame(width: max(10, geometry.size.width * min(max(progress, 0), 1)))
-                        .shadow(color: PlatyTheme.accent.opacity(0.32), radius: 10)
-                        .animation(PlatyMotion.ease, value: progress)
-                }
-            }
-            .frame(height: 11)
-
-            Text(progressText)
-                .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                .foregroundStyle(PlatyTheme.textSecondary)
-                .contentTransition(.numericText())
+        do {
+            try await client.upsertProfile(
+                authToken: token,
+                userID: userID,
+                allergies: Array(allergens).sorted(),
+                dietaryPreferences: Array(diets).sorted(),
+                country: country.trimmingCharacters(in: .whitespacesAndNewlines),
+                systemLanguage: systemLanguage,
+                menuLanguage: menuLanguage
+            )
+            UserLanguagePreferences.cache(
+                systemLanguage: systemLanguage,
+                menuLanguage: menuLanguage,
+                userID: userID
+            )
+            withAnimation(PlatyMotion.spring) { savedRecently = true }
+            try? await Task.sleep(nanoseconds: 1_800_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(PlatyMotion.ease) { savedRecently = false }
+        } catch is CancellationError {
+        } catch {
+            errorMessage = error.localizedDescription
         }
-        .padding(.horizontal, 2)
-    }
-}
-
-private extension SmartMenuFilterDownloadModel.Phase {
-    var isBusy: Bool {
-        switch self {
-        case .downloading, .preparing:
-            return true
-        case .idle, .confirming, .ready, .failed:
-            return false
-        }
-    }
-
-    var isFailure: Bool {
-        if case .failed = self {
-            return true
-        }
-        return false
     }
 }

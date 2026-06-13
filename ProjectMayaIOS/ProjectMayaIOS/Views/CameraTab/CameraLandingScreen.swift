@@ -42,17 +42,11 @@ struct CameraLandingScreen: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    topBar
-                        .padding(.horizontal, 24)
-                        .padding(.top, 56)
-                        .opacity(controlsVisible ? 1 : 0)
-                        .offset(y: controlsVisible ? 0 : -12)
-
                     Spacer()
 
                     FocusFrame(isPulsing: focusPulse)
                         .aspectRatio(0.74, contentMode: .fit)
-                        .padding(.horizontal, 30)
+                        .padding(.horizontal, 16)
                         .opacity(controlsVisible ? 1 : 0)
                         .scaleEffect(controlsVisible ? 1 : 0.95)
 
@@ -149,21 +143,6 @@ struct CameraLandingScreen: View {
             withAnimation(.easeOut(duration: 0.24)) {
                 captureFlash = false
             }
-        }
-    }
-
-    private var topBar: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Platy")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text("Menu Lens")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.62))
-            }
-
-            Spacer()
         }
     }
 
