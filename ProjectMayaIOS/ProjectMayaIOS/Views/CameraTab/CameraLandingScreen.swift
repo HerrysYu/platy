@@ -156,10 +156,10 @@ struct CameraLandingScreen: View {
         HStack {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Platy")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 Text("Menu Lens")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(.white.opacity(0.62))
             }
 

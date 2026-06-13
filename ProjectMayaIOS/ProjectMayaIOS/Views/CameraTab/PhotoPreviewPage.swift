@@ -26,7 +26,7 @@ struct DoneButton: View {
                     HStack(spacing: 9) {
                         ProcessingArc()
                         Text("Translating")
-                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.black)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -56,7 +56,7 @@ struct DoneButton: View {
     private func stateContent(icon: String, title: LocalizedStringKey) -> some View {
         HStack(spacing: 9) {
             Text(title)
-                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .font(.system(size: 17, weight: .semibold))
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .heavy))
         }
@@ -316,7 +316,7 @@ struct ButtonsAtTop: View {
             Spacer()
 
             Text("Preview")
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -376,7 +376,7 @@ struct PhotoPreviewPage: View {
                                 Image(systemName: "plus")
                                 Text("Add Page")
                             }
-                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(height: 52)
                             .padding(.horizontal, 18)

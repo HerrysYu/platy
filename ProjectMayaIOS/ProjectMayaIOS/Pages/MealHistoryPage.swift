@@ -61,14 +61,13 @@ struct MealHistoryPage: View {
             Image(systemName: "menucard")
                 .font(.system(size: 52, weight: .semibold))
                 .foregroundStyle(PlatyTheme.accent)
-                .symbolEffect(.pulse, options: .repeating)
 
             Text("No meal history yet")
-                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(PlatyTheme.textPrimary)
 
             Text("Scan a menu and Platy will save the translation here.")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(PlatyTheme.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -96,8 +95,9 @@ private struct HistoryMealCard: View {
                         .scaledToFill()
                 } else {
                     PlatyTheme.surfaceRaised
-                    Text(meal.icon)
-                        .font(.system(size: 24))
+                    Image(systemName: "fork.knife")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(PlatyTheme.textSecondary)
                 }
             }
             .frame(width: 68, height: 68)
@@ -105,12 +105,12 @@ private struct HistoryMealCard: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 Text(meal.displayName)
-                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(PlatyTheme.textPrimary)
                     .lineLimit(1)
 
                 Text(meal.orderedItems.isEmpty ? "Translated menu" : "\(meal.orderedItems.count) dishes saved")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(PlatyTheme.textSecondary)
             }
 

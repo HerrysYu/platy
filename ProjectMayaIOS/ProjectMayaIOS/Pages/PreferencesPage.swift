@@ -61,7 +61,7 @@ struct PreferencesPage: View {
                 .font(.system(size: 44, weight: .bold))
                 .foregroundStyle(PlatyTheme.textPrimary)
 
-            Text("Customize your dietary needs")
+            Text("Allergies, diets, and menu language")
                 .font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(PlatyTheme.textSecondary)
         }
@@ -75,7 +75,7 @@ struct PreferencesPage: View {
                 .textInputAutocapitalization(.words)
                 .padding(.horizontal, 18)
                 .frame(height: 64)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(PlatyTheme.textPrimary)
                 .background(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -97,7 +97,7 @@ struct PreferencesPage: View {
             }
 
             Text("App language follows your iOS system setting.")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(PlatyTheme.textTertiary)
         }
     }
@@ -111,7 +111,7 @@ struct PreferencesPage: View {
                     ProgressView()
                         .tint(.black)
                 }
-                Text(isSaving ? "Saving" : "Start Exploring")
+                Text(isSaving ? "Saving" : "Save Preferences")
                     .font(.system(size: 22, weight: .bold))
             }
             .foregroundStyle(.black)
@@ -151,7 +151,7 @@ struct PreferencesPage: View {
     private var menuLanguageRow: some View {
         HStack(spacing: 16) {
             Text("Menu")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(PlatyTheme.textPrimary)
             Spacer()
             Picker("Menu", selection: $menuLanguage) {
@@ -236,7 +236,7 @@ private struct ChipButton: View {
         Button(action: action) {
             // Stored values stay English for the backend; display is localized.
             Text(LocalizedStringKey(title))
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(isSelected ? .black : PlatyTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)

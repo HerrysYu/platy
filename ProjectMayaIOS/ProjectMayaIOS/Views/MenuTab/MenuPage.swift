@@ -141,7 +141,7 @@ struct MenuPage: View {
                     Image(systemName: "chevron.left")
                     Text("Home")
                 }
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(PlatyTheme.textPrimary)
                 .padding(.horizontal, 16)
                 .frame(height: 48)
@@ -155,7 +155,7 @@ struct MenuPage: View {
 
             if validPages.count > 1 {
                 Text("\(pageNumber) / \(validPages.count)")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded).monospacedDigit())
+                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
                     .foregroundColor(PlatyTheme.textPrimary)
                     .padding(.horizontal, 14)
                     .frame(height: 42)
@@ -188,7 +188,7 @@ struct MenuPage: View {
 
                     if orderManager.totalCount > 0 {
                         Text("\(orderManager.totalCount)")
-                            .font(.system(size: 12, weight: .heavy, design: .rounded).monospacedDigit())
+                            .font(.system(size: 12, weight: .semibold).monospacedDigit())
                             .foregroundColor(.black)
                             .frame(minWidth: 23, minHeight: 23)
                             .background(PlatyTheme.accent)
@@ -214,7 +214,7 @@ struct MenuPage: View {
                 .font(.system(size: 52, weight: .semibold))
                 .foregroundColor(PlatyTheme.textSecondary)
             Text("No menu data")
-                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(PlatyTheme.textPrimary)
         }
         .padding(28)

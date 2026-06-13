@@ -10,14 +10,11 @@ protocol MealService {
     func fetchRecentMeals() async throws -> [Meal]
 }
 
+/// Placeholder service used until the real history service is injected in
+/// onAppear; it must stay empty so no invented data flashes on first render.
 struct MockMealService: MealService {
     func fetchRecentMeals() async throws -> [Meal] {
-        try await Task.sleep(nanoseconds: 300)
-        return [
-            Meal(id: UUID(), name: "Ginza Noki", icon: "🥗"),
-            Meal(id: UUID(), name: "Roppongi Kappou Ukai", icon: "🍱"),
-            Meal(id: UUID(), name: "Sakutsuki", icon: "🌸")
-        ]
+        []
     }
 }
 
@@ -155,7 +152,7 @@ struct LandingPage: View {
                 }
 
                 Text("Menu Lens")
-                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
                     .foregroundStyle(PlatyTheme.textPrimary)
 
                 PlatyPrimaryButton(title: "Open Camera", systemImage: "camera") {
@@ -177,14 +174,18 @@ struct LandingPage: View {
         } label: {
             PlatyCard {
                 HStack(spacing: 14) {
-                    Text("🍽️")
-                        .font(.system(size: 28))
+                    Image(systemName: "fork.knife")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(PlatyTheme.accent)
+                        .frame(width: 44, height: 44)
+                        .background(PlatyTheme.surfaceRaised)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Ongoing Meal")
-                            .font(.system(size: 19, weight: .heavy, design: .rounded))
+                            .font(.system(size: 19, weight: .semibold))
                             .foregroundStyle(PlatyTheme.textPrimary)
                         Text("\(orderManager.ongoingMealBlocks.count) pages translated")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 14, weight: .regular))
                             .foregroundStyle(PlatyTheme.textSecondary)
                     }
                     Spacer()
@@ -204,14 +205,14 @@ struct LandingPage: View {
                 Spacer()
                 if !vm.meals.isEmpty {
                     Button("All") { showHistory = true }
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(PlatyTheme.accent)
                 }
             }
 
             if vm.meals.isEmpty {
                 Text("No saved meals yet.")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .font(.system(size: 16, weight: .regular))
                     .foregroundStyle(PlatyTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(20)
@@ -248,14 +249,15 @@ private struct LandingMealRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(meal.icon)
-                .font(.system(size: 26))
+            Image(systemName: "fork.knife")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(PlatyTheme.textSecondary)
                 .frame(width: 54, height: 54)
                 .background(PlatyTheme.surfaceRaised)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             Text(meal.name)
-                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(PlatyTheme.textPrimary)
                 .lineLimit(1)
 

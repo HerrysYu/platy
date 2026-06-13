@@ -26,7 +26,7 @@ struct SignInPage: View {
 
                 PlatyScreenHeader(
                     title: "Welcome Back",
-                    subtitle: "Sign in to continue your food journey"
+                    subtitle: "Sign in to your account"
                 )
                 .platyEntrance()
 
@@ -59,7 +59,7 @@ struct SignInPage: View {
                             Text("Remember me")
                                 .foregroundStyle(PlatyTheme.textSecondary)
                         }
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .regular))
                     }
                     .buttonStyle(.plain)
 
@@ -69,7 +69,7 @@ struct SignInPage: View {
                         Button("Clear saved") {
                             presentClearCredentialsAlert()
                         }
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundStyle(PlatyTheme.textTertiary)
                     }
                 }

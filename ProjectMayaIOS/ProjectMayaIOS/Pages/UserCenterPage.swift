@@ -60,7 +60,7 @@ struct UserCenterPage: View {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                         Text("Sign Out")
                     }
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(PlatyTheme.danger)
                     .frame(maxWidth: .infinity)
                     .frame(height: 58)
@@ -130,13 +130,13 @@ struct UserCenterPage: View {
 
                 VStack(alignment: .leading, spacing: 9) {
                     Text(userLabel)
-                        .font(.system(size: 20, weight: .heavy, design: .rounded))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(PlatyTheme.textPrimary)
                         .lineLimit(2)
                         .minimumScaleFactor(0.72)
 
                     Text("Platy Member")
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.black)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
@@ -281,13 +281,13 @@ struct UserCenterPage: View {
                 .frame(width: 28)
 
             Text(row.title)
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(PlatyTheme.textPrimary)
 
             Spacer()
 
             Text(row.value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundColor(PlatyTheme.textSecondary)
                 .lineLimit(1)
 
@@ -304,14 +304,14 @@ struct UserCenterPage: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(PlatyTheme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(PlatyTheme.textTertiary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
@@ -380,13 +380,13 @@ private struct SmartFilterModelDownloadSheet: View {
 
                 VStack(spacing: 8) {
                     Text(title)
-                        .font(.system(size: 24, weight: .heavy, design: .rounded))
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(PlatyTheme.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
 
                     Text(subtitle)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundStyle(phase.isFailure ? PlatyTheme.danger : PlatyTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
@@ -402,7 +402,7 @@ private struct SmartFilterModelDownloadSheet: View {
                 HStack(spacing: 12) {
                     Button(action: onCancel) {
                         Text(phase.isFailure ? "Close" : "Cancel")
-                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(PlatyTheme.textPrimary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
@@ -426,7 +426,7 @@ private struct SmartFilterModelDownloadSheet: View {
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.78)
                         }
-                        .font(.system(size: 17, weight: .heavy, design: .rounded))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.black)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
@@ -482,7 +482,7 @@ private struct SmartFilterModelDownloadSheet: View {
             .frame(height: 11)
 
             Text(progressText)
-                .font(.system(size: 13, weight: .heavy, design: .rounded).monospacedDigit())
+                .font(.system(size: 13, weight: .semibold).monospacedDigit())
                 .foregroundStyle(PlatyTheme.textSecondary)
                 .contentTransition(.numericText())
         }

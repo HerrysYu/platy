@@ -72,18 +72,18 @@ struct DishDetailView: View {
         VStack(alignment: .leading, spacing: 24) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(originalName)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(PlatyTheme.accent)
                     .lineLimit(1)
 
                 Text(dish.name)
-                    .font(.system(size: 34, weight: .heavy, design: .rounded))
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundStyle(PlatyTheme.textPrimary)
                     .lineLimit(3)
                     .minimumScaleFactor(0.7)
 
                 Text("Verify details with the restaurant before ordering.")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundColor(PlatyTheme.textSecondary)
 
                 if isStreaming {
@@ -92,7 +92,7 @@ struct DishDetailView: View {
                             .tint(PlatyTheme.accent)
                             .scaleEffect(0.72)
                         Text("Writing details")
-                            .font(.system(size: 13, weight: .heavy, design: .rounded))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(PlatyTheme.accent)
                     }
                     .padding(.top, 2)
@@ -106,7 +106,7 @@ struct DishDetailView: View {
             PlatyCard {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("About")
-                        .font(.system(size: 21, weight: .heavy, design: .rounded))
+                        .font(.system(size: 21, weight: .bold))
                         .foregroundStyle(PlatyTheme.textPrimary)
 
                     if dish.description.isEmpty && isStreaming {
@@ -140,11 +140,11 @@ struct DishDetailView: View {
                 PlatyCard {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Usually includes")
-                            .font(.system(size: 21, weight: .heavy, design: .rounded))
+                            .font(.system(size: 21, weight: .bold))
                             .foregroundStyle(PlatyTheme.textPrimary)
 
                         Text(ingredients.joined(separator: ", "))
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(PlatyTheme.textSecondary)
                     }
                     .padding(18)
@@ -156,7 +156,7 @@ struct DishDetailView: View {
                     HStack(spacing: 10) {
                         ForEach(tags, id: \.self) { tag in
                             Text(tag)
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(PlatyTheme.textPrimary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
@@ -195,10 +195,10 @@ struct DishDetailView: View {
                 .tint(PlatyTheme.accent)
                 .scaleEffect(1.2)
             Text("Finding dish details")
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(PlatyTheme.textPrimary)
             Text("Images and descriptions may take a moment.")
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(PlatyTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -212,11 +212,11 @@ struct DishDetailView: View {
                 .foregroundStyle(PlatyTheme.danger)
 
             Text("Could not load dish details")
-                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(PlatyTheme.textPrimary)
 
             Text(message)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(PlatyTheme.textSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -288,7 +288,7 @@ private struct AboutDescriptionText: View {
 
     var body: some View {
         Text(text + (isStreaming ? " |" : ""))
-            .font(.system(size: 16, weight: .medium, design: .rounded))
+            .font(.system(size: 16, weight: .medium))
             .foregroundStyle(PlatyTheme.textSecondary)
             .lineLimit(nil)
             .multilineTextAlignment(.leading)

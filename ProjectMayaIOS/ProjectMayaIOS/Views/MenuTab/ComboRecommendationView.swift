@@ -101,7 +101,7 @@ struct ComboRecommendationView: View {
                         .font(.system(size: 19, weight: .heavy))
                         .foregroundStyle(PlatyTheme.accentStrong)
                     Text("AI Combo")
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(PlatyTheme.textSecondary)
                         .textCase(.uppercase)
                         .kerning(1.4)
@@ -182,7 +182,7 @@ struct ComboRecommendationView: View {
                     Image(systemName: addedAll ? "checkmark" : "plus")
                         .font(.system(size: 18, weight: .heavy))
                     Text(addedAll ? "Added!" : "Add Combo to Order")
-                        .font(.system(size: 19, weight: .bold, design: .rounded))
+                        .font(.system(size: 19, weight: .semibold))
                 }
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
@@ -199,7 +199,7 @@ struct ComboRecommendationView: View {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 15, weight: .bold))
                     Text("Try Another Combo")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(size: 17, weight: .semibold))
                 }
                 .foregroundStyle(PlatyTheme.textSecondary)
                 .frame(maxWidth: .infinity)
@@ -219,7 +219,7 @@ struct ComboRecommendationView: View {
                 .foregroundStyle(PlatyTheme.textTertiary)
 
             Text("Couldn't build a combo")
-                .font(.system(size: 22, weight: .heavy, design: .rounded))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(PlatyTheme.textPrimary)
 
             Text(message)
@@ -233,7 +233,7 @@ struct ComboRecommendationView: View {
                 runID = UUID()
             } label: {
                 Text("Retry")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 44)
                     .frame(height: 54)
@@ -276,15 +276,15 @@ private struct ComboThinkingView: View {
             }
 
             VStack(spacing: 10) {
-                Text(statusMessage.isEmpty ? String(localized: "Putting a combo together…") : statusMessage)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                Text(statusMessage.isEmpty ? String(localized: "Building a combo") : statusMessage)
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(PlatyTheme.textPrimary)
                     .multilineTextAlignment(.center)
                     .contentTransition(.opacity)
                     .id(statusMessage)
                     .transition(.opacity)
 
-                Text("Pairing dishes from this menu just for you")
+                Text("Based on this menu and your preferences")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(PlatyTheme.textTertiary)
             }
@@ -334,12 +334,12 @@ private struct ComboItemCard: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 8) {
                     Text(item.name)
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(PlatyTheme.textPrimary)
                         .lineLimit(2)
 
                     Text(LocalizedStringKey(roleInfo.label))
-                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.black)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
