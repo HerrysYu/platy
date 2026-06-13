@@ -8,7 +8,6 @@ struct UserCenterPage: View {
 
     private let allergens = ["Gluten", "Dairy", "Nuts", "Peanuts", "Soy", "Eggs", "Shellfish", "Fish"]
     private let diets = ["Vegetarian", "Vegan", "Halal", "Kosher", "Alcohol-Free"]
-    private let systemLanguages = ["中文", "English"]
     private let menuLanguages = ["English", "中文"]
     private let chipColumns = [GridItem(.adaptive(minimum: 112), spacing: 12)]
 
@@ -222,12 +221,15 @@ struct UserCenterPage: View {
             PlatySectionLabel(title: "Language")
 
             PlatyCard {
-                VStack(spacing: 0) {
-                    pickerRow(title: "App Language", selection: $settings.systemLanguage, options: systemLanguages)
-                    Divider().overlay(PlatyTheme.divider)
-                    pickerRow(title: "Menu Language", selection: $settings.menuLanguage, options: menuLanguages)
-                }
+                pickerRow(title: "Menu Language", selection: $settings.menuLanguage, options: menuLanguages)
             }
+
+            // The interface language follows the device; only the menu
+            // translation target is configurable here.
+            Text("App language follows your system settings.")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(PlatyTheme.textTertiary)
+                .padding(.horizontal, 4)
         }
     }
 
@@ -304,7 +306,9 @@ final class UserSettingsViewModel: ObservableObject {
     private var saveTask: Task<Void, Never>?
 
     func load(authService: AuthService) async {
-        systemLanguage = UserLanguagePreferences.cachedSystemLanguage(userID: authService.currentUserID)
+        // The UI language tracks the device, so store the active system
+        // language rather than a user-picked one.
+        systemLanguage = UserLanguagePreferences.appLanguage
         menuLanguage = UserLanguagePreferences.cachedMenuLanguage(userID: authService.currentUserID)
 
         guard
@@ -320,7 +324,6 @@ final class UserSettingsViewModel: ObservableObject {
                 allergens = Set(profile.allergies ?? [])
                 diets = Set(profile.dietaryPreferences ?? [])
                 preferenceNote = profile.preferenceNote ?? ""
-                systemLanguage = profile.systemLanguage ?? systemLanguage
                 menuLanguage = profile.menuLanguage ?? menuLanguage
                 UserLanguagePreferences.cache(
                     systemLanguage: systemLanguage,

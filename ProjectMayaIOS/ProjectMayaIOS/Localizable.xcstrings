@@ -1743,6 +1743,16 @@
           }
         }
       }
+    },
+    "App language follows your system settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用语言跟随系统设置。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
