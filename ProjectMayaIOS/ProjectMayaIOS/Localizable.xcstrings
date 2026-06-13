@@ -1,12 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
-    "%lld" : {
-
-    },
+    "" : {},
+    "%lld" : {},
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -43,6 +39,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld page%2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 页"
           }
         }
       }
@@ -149,7 +151,14 @@
       }
     },
     "AI combo recommendation" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 套餐推荐"
+          }
+        }
+      }
     },
     "Alcohol-Free" : {
       "extractionState" : "stale",
@@ -230,6 +239,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "基于这份菜单与你的偏好"
+          }
+        }
+      }
+    },
+    "Best to avoid" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议避免"
           }
         }
       }
@@ -316,7 +335,14 @@
       }
     },
     "Confirm password" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认密码"
+          }
+        }
+      }
     },
     "Could not load dish details" : {
       "localizations" : {
@@ -339,7 +365,14 @@
       }
     },
     "Couldn't save" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存失败"
+          }
+        }
+      }
     },
     "Create Account" : {
       "localizations" : {
@@ -389,6 +422,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "乳制品"
+          }
+        }
+      }
+    },
+    "Describe your tastes in your own words" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用你自己的话描述口味偏好"
           }
         }
       }
@@ -532,6 +575,16 @@
         }
       }
     },
+    "e.g. no cilantro, love spicy & sour, light on oil, allergic to crab…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "例如：不要香菜、爱酸辣、少油、对螃蟹过敏…"
+          }
+        }
+      }
+    },
     "Edit Preferences" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -605,6 +658,16 @@
         }
       }
     },
+    "Fits your preferences" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "符合你的偏好"
+          }
+        }
+      }
+    },
     "Follow System" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -612,6 +675,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "跟随系统"
+          }
+        }
+      }
+    },
+    "For you" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为你"
           }
         }
       }
@@ -887,6 +960,16 @@
         }
       }
     },
+    "Only your 5 most recent scans are kept." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅保留最近 5 条扫描记录。"
+          }
+        }
+      }
+    },
     "Open Camera" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1098,6 +1181,7 @@
       }
     },
     "Region" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1189,7 +1273,14 @@
       }
     },
     "Saved" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存"
+          }
+        }
+      }
     },
     "Saving" : {
       "extractionState" : "stale",
@@ -1224,6 +1315,7 @@
       }
     },
     "Select Country" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1400,6 +1492,7 @@
       }
     },
     "Thinking" : {
+      "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -1611,12 +1704,32 @@
         }
       }
     },
+    "Worth checking" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要留意"
+          }
+        }
+      }
+    },
     "Writing details" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在生成介绍"
+          }
+        }
+      }
+    },
+    "Your Tastes" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的口味"
           }
         }
       }
