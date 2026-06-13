@@ -99,6 +99,11 @@ struct DishDetailView: View {
                 }
             }
 
+            if let advice = viewModel.advice, advice.hasConcerns {
+                DishAdviceCard(advice: advice)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             if !dish.media.isEmpty {
                 mediaStrip(dish.media)
             }
@@ -168,10 +173,12 @@ struct DishDetailView: View {
                 }
             }
 
+            // Ordering only needs the dish name, which we have immediately, so
+            // the button is usable without waiting for the description.
             PlatyPrimaryButton(
-                title: canAddToOrder ? (didAdd ? "Added" : "Add to Order") : "Thinking",
-                systemImage: canAddToOrder ? (didAdd ? "checkmark" : "plus") : "hourglass",
-                isDisabled: didAdd || !canAddToOrder
+                title: didAdd ? "Added" : "Add to Order",
+                systemImage: didAdd ? "checkmark" : "plus",
+                isDisabled: didAdd
             ) {
                 withAnimation(PlatyMotion.spring) {
                     orderManager.add(dish: dish, originalName: originalName)
@@ -279,6 +286,84 @@ struct DishDetailView: View {
             return nil
         }        
         return URL(string: encoded)
+    }
+}
+
+private struct DishAdviceCard: View {
+    let advice: DishAdvice
+
+    private var tint: Color {
+        switch advice.verdict {
+        case .avoid: return PlatyTheme.danger
+        case .caution, .ok: return PlatyTheme.accent
+        }
+    }
+
+    private var icon: String {
+        switch advice.verdict {
+        case .avoid: return "exclamationmark.octagon.fill"
+        case .caution: return "exclamationmark.triangle.fill"
+        case .ok: return "checkmark.seal.fill"
+        }
+    }
+
+    private var heading: LocalizedStringKey {
+        switch advice.verdict {
+        case .avoid: return "Best to avoid"
+        case .caution: return "Worth checking"
+        case .ok: return "Fits your preferences"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(tint)
+                Text(heading)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(PlatyTheme.textPrimary)
+                Spacer()
+                Text("For you")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundStyle(tint)
+                    .textCase(.uppercase)
+                    .kerning(0.8)
+            }
+
+            if !advice.summary.isEmpty {
+                Text(advice.summary)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(PlatyTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !advice.notes.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(advice.notes, id: \.self) { note in
+                        HStack(alignment: .top, spacing: 9) {
+                            Image(systemName: "circle.fill")
+                                .font(.system(size: 5))
+                                .foregroundStyle(tint)
+                                .padding(.top, 7)
+                            Text(note)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(PlatyTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tint.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(tint.opacity(0.45), lineWidth: 1)
+        )
     }
 }
 

@@ -22,21 +22,47 @@ struct MealHistoryPage: View {
                 } else {
                     VStack(spacing: 12) {
                         ForEach(Array(mealHistoryService.recentMeals.enumerated()), id: \.element.id) { index, meal in
-                            Button {
-                                selectedMeal = meal
-                                orderManager.loadHistoricalMeal(
-                                    images: meal.menuImages,
-                                    blocks: meal.menuBlocks,
-                                    items: meal.orderedItems
-                                )
-                                showMealDetail = true
-                            } label: {
-                                HistoryMealCard(meal: meal)
+                            // Delete button is a sibling overlay (not nested in
+                            // the open button) so its taps aren't swallowed.
+                            ZStack(alignment: .topTrailing) {
+                                Button {
+                                    selectedMeal = meal
+                                    orderManager.loadHistoricalMeal(
+                                        images: meal.menuImages,
+                                        blocks: meal.menuBlocks,
+                                        items: meal.orderedItems
+                                    )
+                                    showMealDetail = true
+                                } label: {
+                                    HistoryMealCard(meal: meal)
+                                }
+                                .buttonStyle(PlatyPressStyle())
+
+                                Button {
+                                    withAnimation(PlatyMotion.spring) {
+                                        mealHistoryService.deleteMeal(meal)
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 12, weight: .heavy))
+                                        .foregroundStyle(PlatyTheme.textSecondary)
+                                        .frame(width: 30, height: 30)
+                                        .background(Color.black.opacity(0.55))
+                                        .clipShape(Circle())
+                                        .overlay(Circle().stroke(PlatyTheme.border, lineWidth: 1))
+                                }
+                                .buttonStyle(PlatyPressStyle())
+                                .padding(10)
                             }
-                            .buttonStyle(PlatyPressStyle())
                             .platyEntrance(delay: 0.04 * Double(index + 1))
                         }
                     }
+
+                    Text("Only your 5 most recent scans are kept.")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(PlatyTheme.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 2)
                 }
             }
             .padding(.horizontal, 24)

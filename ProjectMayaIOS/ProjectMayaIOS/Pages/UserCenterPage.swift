@@ -28,7 +28,7 @@ struct UserCenterPage: View {
                 profileCard
                     .platyEntrance()
 
-                regionSection
+                preferenceNoteSection
                     .platyEntrance(delay: 0.05)
 
                 chipSection(
@@ -142,38 +142,38 @@ struct UserCenterPage: View {
         }
     }
 
-    // MARK: - Region (inline)
+    // MARK: - Free-form preferences (inline)
 
-    private var regionSection: some View {
+    private var preferenceNoteSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            PlatySectionLabel(title: "Region")
+            PlatySectionLabel(title: "Your Tastes")
 
-            HStack(spacing: 14) {
-                Image(systemName: "globe.asia.australia")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(PlatyTheme.accent)
-                    .frame(width: 28)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Describe your tastes in your own words")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(PlatyTheme.textTertiary)
 
-                // Shows the saved region once chosen; placeholder otherwise.
                 TextField(
                     "",
-                    text: $settings.country,
-                    prompt: Text("Select Country").foregroundStyle(PlatyTheme.textTertiary)
+                    text: $settings.preferenceNote,
+                    prompt: Text("e.g. no cilantro, love spicy & sour, light on oil, allergic to crab…")
+                        .foregroundStyle(PlatyTheme.textTertiary),
+                    axis: .vertical
                 )
-                .textInputAutocapitalization(.words)
-                .font(.system(size: 17, weight: .semibold))
+                .lineLimit(3...6)
+                .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(PlatyTheme.textPrimary)
-                .submitLabel(.done)
-                .onSubmit { settings.scheduleSave(authService: authService) }
+                .padding(16)
+                .background(PlatyTheme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(PlatyTheme.border, lineWidth: 1)
+                )
+                .onChange(of: settings.preferenceNote) { _, _ in
+                    settings.scheduleSave(authService: authService)
+                }
             }
-            .padding(.horizontal, 18)
-            .frame(height: 64)
-            .background(PlatyTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(PlatyTheme.border, lineWidth: 1)
-            )
         }
     }
 
@@ -292,7 +292,7 @@ struct UserCenterPage: View {
 final class UserSettingsViewModel: ObservableObject {
     @Published var allergens: Set<String> = []
     @Published var diets: Set<String> = []
-    @Published var country: String = ""
+    @Published var preferenceNote: String = ""
     @Published var systemLanguage = UserLanguagePreferences.defaultSystemLanguage
     @Published var menuLanguage = UserLanguagePreferences.defaultMenuLanguage
     @Published var isSaving = false
@@ -319,7 +319,7 @@ final class UserSettingsViewModel: ObservableObject {
             if let profile = try await client.fetchProfile(authToken: token, userID: userID) {
                 allergens = Set(profile.allergies ?? [])
                 diets = Set(profile.dietaryPreferences ?? [])
-                country = profile.country ?? ""
+                preferenceNote = profile.preferenceNote ?? ""
                 systemLanguage = profile.systemLanguage ?? systemLanguage
                 menuLanguage = profile.menuLanguage ?? menuLanguage
                 UserLanguagePreferences.cache(
@@ -363,7 +363,8 @@ final class UserSettingsViewModel: ObservableObject {
                 userID: userID,
                 allergies: Array(allergens).sorted(),
                 dietaryPreferences: Array(diets).sorted(),
-                country: country.trimmingCharacters(in: .whitespacesAndNewlines),
+                country: "",
+                preferenceNote: preferenceNote.trimmingCharacters(in: .whitespacesAndNewlines),
                 systemLanguage: systemLanguage,
                 menuLanguage: menuLanguage
             )

@@ -9,30 +9,37 @@ class DishDetailViewModel: ObservableObject {
     @Published var streamingDescription: String = ""
     @Published var streamingMedia: [DishMedia] = []
     @Published var errorMessage: String?
+    /// Per-dish advisory based on the user's saved preferences.
+    @Published var advice: DishAdvice?
 
     private let service: DishService
+    private let adviceService: DishAdviceService
     private let authService: AuthService
     private let initialLanguage: String?
     private let dishName: String
     private var loadTask: Task<Void, Never>?
     private var imageTask: Task<Void, Never>?
-    
+    private var adviceTask: Task<Void, Never>?
+
     init(dishName: String, language: String? = nil, authService: AuthService) {
         self.dishName = dishName
         self.authService = authService
         self.initialLanguage = language
         self.service = DishService(authService: authService)
+        self.adviceService = DishAdviceService(authService: authService)
         load()
     }
 
     deinit {
         loadTask?.cancel()
         imageTask?.cancel()
+        adviceTask?.cancel()
     }
     
     func load() {
         loadTask?.cancel()
         imageTask?.cancel()
+        adviceTask?.cancel()
         isLoading = true
         isStreaming = true
         detail = nil
@@ -40,9 +47,39 @@ class DishDetailViewModel: ObservableObject {
         streamingDescription = ""
         streamingMedia = []
         errorMessage = nil
+        advice = nil
 
         let authToken = authService.getAuthToken()
         let userID = authService.currentUserID
+
+        // Check the dish against the user's saved preferences in parallel with
+        // the detail/image fetches so the advisory shows as soon as it's ready.
+        adviceTask = Task { [weak self] in
+            guard let self, let authToken, let userID else { return }
+            guard let profile = try? await SupabaseClient().fetchProfile(authToken: authToken, userID: userID) else { return }
+
+            let allergies = profile.allergies ?? []
+            let diets = profile.dietaryPreferences ?? []
+            let note = profile.preferenceNote ?? ""
+            guard !allergies.isEmpty || !diets.isEmpty || !note.isEmpty else { return }
+
+            do {
+                let result = try await self.adviceService.advice(
+                    dish: self.dishName,
+                    description: "",
+                    allergies: allergies,
+                    diets: diets,
+                    preferenceNote: note,
+                    target: UserLanguagePreferences.appLanguage
+                )
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    withAnimation(PlatyMotion.softSpring) { self.advice = result }
+                }
+            } catch {
+                print("Dish advice error: \(error)")
+            }
+        }
 
         imageTask = Task { [weak self] in
             guard let self else { return }

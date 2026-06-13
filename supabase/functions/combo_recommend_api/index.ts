@@ -11,7 +11,6 @@ const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3-flash-preview";
 const GEMINI_FALLBACK_MODELS = parseList(
   Deno.env.get("GEMINI_FALLBACK_MODELS") ?? "gemini-2.5-flash",
 );
-const MAX_AGENT_STEPS = 6;
 const MAX_MENU_ITEMS = 160;
 
 type MenuItem = {
@@ -23,6 +22,7 @@ type Preferences = {
   allergies: string[];
   diets: string[];
   country: string;
+  preferenceNote: string;
   language: string;
 };
 
@@ -140,6 +140,10 @@ function streamComboRecommendation(
 // cannot be combined in one request).
 // ---------------------------------------------------------------------------
 
+// Single-shot recommendation: the menu and preferences are small enough to
+// inline into one prompt, so we skip the multi-round tool-calling agent (which
+// cost 4-6 sequential model calls) and do ONE generateContent, with at most one
+// retry if the model picks an item that isn't on the scanned menu.
 async function runComboAgent(
   menuItems: MenuItem[],
   preferences: Preferences,
@@ -148,194 +152,105 @@ async function runComboAgent(
 ): Promise<ComboRecommendation> {
   const apiKey = getRequiredEnv("GEMINI_API_KEY");
 
-  send("combo_status", { stage: "start", message: statusText("start", target) });
-
-  const tools = [
-    {
-      functionDeclarations: [
-        {
-          name: "get_menu_items",
-          description:
-            "Read the full list of dishes scanned from the restaurant menu (OCR results). Returns dish names and their translations when available.",
-          parameters: { type: "OBJECT", properties: {} },
-        },
-        {
-          name: "get_user_preferences",
-          description:
-            "Read the user's saved dining profile: allergies, dietary restrictions, cultural background, and preferred language.",
-          parameters: { type: "OBJECT", properties: {} },
-        },
-        {
-          name: "web_search",
-          description:
-            "Search the public web for up-to-date information, e.g. what a dish is, typical pairings, flavor profile, or regional context. Use sparingly: at most 2 searches.",
-          parameters: {
-            type: "OBJECT",
-            properties: {
-              query: {
-                type: "STRING",
-                description: "The search query.",
-              },
-            },
-            required: ["query"],
-          },
-        },
-      ],
-    },
-  ];
+  send("combo_status", { stage: "reading_menu", message: statusText("reading_menu", target) });
 
   const contents: any[] = [
-    {
-      role: "user",
-      parts: [{ text: buildAgentPrompt(target) }],
-    },
+    { role: "user", parts: [{ text: buildComboPrompt(menuItems, preferences, target) }] },
   ];
 
-  let webSearchCount = 0;
+  send("combo_status", { stage: "thinking", message: statusText("thinking", target) });
 
-  for (let step = 0; step < MAX_AGENT_STEPS; step += 1) {
-    const payload = {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const data = await callGemini(apiKey, {
       contents,
-      tools,
-      generationConfig: {
-        temperature: 0.6,
-        maxOutputTokens: 2048,
-      },
-    };
+      generationConfig: { temperature: 0.6, maxOutputTokens: 1536 },
+    });
+    const text = extractCandidateText(data?.candidates?.[0]);
+    const combo = parseComboRecommendation(text);
 
-    const data = await callGemini(apiKey, payload);
-    const candidate = data?.candidates?.[0];
-    const parts = Array.isArray(candidate?.content?.parts)
-      ? candidate.content.parts
-      : [];
+    if (combo) {
+      const { combo: verified, rejected } = enforceMenuMatch(combo, menuItems);
+      if (verified) {
+        send("combo_status", { stage: "done", message: statusText("done", target) });
+        return verified;
+      }
 
-    const functionCalls = parts.filter((part: any) => part?.functionCall);
-
-    if (functionCalls.length === 0) {
-      const text = extractCandidateText(candidate);
-      const combo = parseComboRecommendation(text);
-      if (combo) {
-        // Hard guarantee: every item must exist on the scanned menu.
-        const { combo: verified, rejected } = enforceMenuMatch(combo, menuItems);
-        if (verified) {
-          send("combo_status", {
-            stage: "done",
-            message: statusText("done", target),
-          });
-          return verified;
-        }
-
+      // One corrective retry, otherwise fall back to keeping valid items only.
+      if (attempt === 0) {
         contents.push({ role: "model", parts: [{ text }] });
         contents.push({
           role: "user",
-          parts: [
-            {
-              text:
-                `These items are NOT on the scanned menu: ${rejected.join(", ")}. ` +
-                "Every original_name must be copied EXACTLY from get_menu_items output. " +
-                "Pick again using only real menu items, then output the final JSON object.",
-            },
-          ],
+          parts: [{
+            text:
+              `These items are NOT on the menu: ${rejected.join(", ")}. ` +
+              "Use ONLY items from the menu list and copy original_name exactly. Output the JSON object only.",
+          }],
         });
         continue;
       }
 
-      // Nudge the model to emit the required JSON once.
+      const salvaged = filterToMenuItems(combo, menuItems);
+      if (salvaged) {
+        send("combo_status", { stage: "done", message: statusText("done", target) });
+        return salvaged;
+      }
+    }
+
+    if (attempt === 0) {
       contents.push({ role: "model", parts: [{ text }] });
       contents.push({
         role: "user",
-        parts: [
-          {
-            text:
-              "Output ONLY the final recommendation as a single valid JSON object in the exact schema given earlier. No markdown, no extra text.",
-          },
-        ],
-      });
-      continue;
-    }
-
-    contents.push({ role: "model", parts });
-
-    const responseParts: any[] = [];
-    for (const part of functionCalls) {
-      const name = part.functionCall?.name ?? "";
-      const args = part.functionCall?.args ?? {};
-      let response: unknown;
-
-      switch (name) {
-        case "get_menu_items":
-          send("combo_status", {
-            stage: "reading_menu",
-            message: statusText("reading_menu", target),
-          });
-          response = { items: menuItems.slice(0, MAX_MENU_ITEMS) };
-          break;
-        case "get_user_preferences":
-          send("combo_status", {
-            stage: "reading_preferences",
-            message: statusText("reading_preferences", target),
-          });
-          response = preferences;
-          break;
-        case "web_search": {
-          const query = typeof args?.query === "string" ? args.query : "";
-          if (!query || webSearchCount >= 2) {
-            response = {
-              result:
-                "Search unavailable (limit reached). Rely on your own knowledge.",
-            };
-            break;
-          }
-          webSearchCount += 1;
-          send("combo_status", {
-            stage: "searching",
-            message: statusText("searching", target, query),
-          });
-          response = { result: await groundedWebSearch(apiKey, query) };
-          break;
-        }
-        default:
-          response = { error: `Unknown tool: ${name}` };
-      }
-
-      responseParts.push({
-        functionResponse: { name, response },
+        parts: [{ text: "Output ONLY the final recommendation as one valid JSON object in the schema given. No markdown." }],
       });
     }
-
-    contents.push({ role: "user", parts: responseParts });
-    send("combo_status", {
-      stage: "thinking",
-      message: statusText("thinking", target),
-    });
   }
 
-  // Out of steps: force a final answer without tools.
-  send("combo_status", { stage: "finalizing", message: statusText("thinking", target) });
-  contents.push({
-    role: "user",
-    parts: [
-      {
-        text:
-          "Stop using tools now. Output ONLY the final recommendation as a single valid JSON object in the exact schema given earlier.",
-      },
-    ],
-  });
+  throw new Error("Failed to produce a valid combo recommendation");
+}
 
-  const data = await callGemini(apiKey, {
-    contents,
-    generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
-  });
-  const combo = parseComboRecommendation(
-    extractCandidateText(data?.candidates?.[0]),
-  );
-  if (combo) {
-    // Last chance: keep only items that really exist on the menu.
-    const verified = filterToMenuItems(combo, menuItems);
-    if (verified) return verified;
-  }
+function menuListText(menuItems: MenuItem[]): string {
+  return menuItems
+    .slice(0, MAX_MENU_ITEMS)
+    .map((item) =>
+      item.translated && item.translated !== item.name
+        ? `- ${item.name} (${item.translated})`
+        : `- ${item.name}`
+    )
+    .join("\n");
+}
 
-  throw new Error("Agent failed to produce a valid combo recommendation");
+function buildComboPrompt(
+  menuItems: MenuItem[],
+  preferences: Preferences,
+  target: string,
+): string {
+  const prefLines = [
+    `Allergies: ${preferences.allergies.length ? preferences.allergies.join(", ") : "none"}`,
+    `Dietary restrictions: ${preferences.diets.length ? preferences.diets.join(", ") : "none"}`,
+    preferences.country ? `Background: ${preferences.country}` : "",
+    preferences.preferenceNote ? `Stated tastes: ${preferences.preferenceNote}` : "",
+  ].filter(Boolean).join("\n");
+
+  return [
+    "You are a friendly restaurant ordering assistant.",
+    "Recommend ONE great combo (2-4 items that go well together) from the scanned menu for this user.",
+    "",
+    "Scanned menu items (use these EXACT names for original_name):",
+    menuListText(menuItems),
+    "",
+    "User profile:",
+    prefLines,
+    "",
+    "Hard rules:",
+    "1. Only recommend items from the menu list above; copy original_name exactly.",
+    "2. NEVER include anything that conflicts with the user's allergies or dietary restrictions.",
+    "3. Respect the user's stated tastes when possible.",
+    "4. Keep the combo coherent (a drink+dessert combo is fine for a drink shop).",
+    "5. AT MOST ONE staple/carb item. Noodles, rice, fried rice, porridge/congee, dumplings, buns, bread, pancakes ALL count as staples — never pair two. If the main dish is itself carb-based, it fills the staple slot; pair it with a non-staple side, drink, or dessert.",
+    "",
+    `Output ONLY one valid JSON object (no markdown, no code fences), with all human-readable text in ${target}:`,
+    '{"theme":"short catchy name","summary":"1-2 sentences on why it fits this user","items":[{"name":"display name","original_name":"exact name from the menu list","role":"main|staple|side|drink|dessert","reason":"one short sentence"}],"tips":"optional one-line tip or null"}',
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -426,65 +341,6 @@ function filterToMenuItems(
   return { ...combo, items };
 }
 
-/// Nested Gemini call with google_search grounding, summarized as plain text.
-async function groundedWebSearch(apiKey: string, query: string): Promise<string> {
-  try {
-    const data = await callGemini(apiKey, {
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text:
-                `Search the web for: ${query}\n` +
-                "Summarize the most useful findings in under 120 words of plain text. No markdown.",
-            },
-          ],
-        },
-      ],
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 512 },
-    });
-
-    const text = extractCandidateText(data?.candidates?.[0]);
-    return text || "No useful results found.";
-  } catch (err) {
-    console.warn("web_search tool failed:", err);
-    return "Search failed. Rely on your own knowledge.";
-  }
-}
-
-function buildAgentPrompt(target: string): string {
-  return [
-    "You are a friendly restaurant ordering assistant agent.",
-    "Goal: recommend ONE great combo from the scanned menu for this user.",
-    "A combo is 2-4 items that go well together, e.g. a main dish + a staple (rice/noodles), or a milk tea + dessert pairing.",
-    "",
-    "You have tools:",
-    "- get_menu_items: read the scanned menu (ALWAYS call this first).",
-    "- get_user_preferences: read the user's allergies, diets, and background (ALWAYS call this).",
-    "- web_search: optional, max 2 calls, only when you genuinely don't know a dish.",
-    "",
-    "Hard rules:",
-    "1. Only recommend items that actually appear on the menu (use their exact menu names).",
-    "2. NEVER include anything that conflicts with the user's allergies or dietary restrictions.",
-    "3. Pick a combo that is coherent (don't mix random categories; a drink/dessert combo is fine if the menu is a drink shop).",
-    "4. Consider the user's cultural background for taste, but feel free to suggest something adventurous yet approachable.",
-    "5. AT MOST ONE staple/carbohydrate item per combo. Noodles, rice, fried rice, porridge/congee, dumplings, buns, bread, and pancakes ALL count as staples — never pair two of them (e.g. noodles + porridge is wrong). If the main dish is itself carb-based (a noodle bowl, fried rice, etc.), it fills the staple slot: pair it with a non-staple side, drink, or dessert instead.",
-    "",
-    `When you are done, output ONLY one valid JSON object (no markdown, no code fences) in ${target}:`,
-    "{",
-    '  "theme": "short catchy combo name",',
-    '  "summary": "1-2 sentences on why this combo fits this user",',
-    '  "items": [',
-    '    {"name": "translated/display name", "original_name": "exact name as on the menu", "role": "main|staple|side|drink|dessert", "reason": "one short sentence"}',
-    "  ],",
-    '  "tips": "optional one-line ordering tip, or null"',
-    "}",
-    "",
-    `All human-readable text (theme, summary, reasons, tips) must be in ${target}. original_name must stay exactly as on the menu.`,
-  ].join("\n");
-}
 
 function statusText(stage: string, target: string, extra = ""): string {
   const zh = /中文|chinese|zh|cn/i.test(target);
@@ -543,6 +399,9 @@ function parsePreferences(value: unknown): Preferences {
     allergies: stringList(obj.allergies),
     diets: stringList(obj.diets ?? obj.dietary_preferences),
     country: typeof obj.country === "string" ? obj.country.trim() : "",
+    preferenceNote: typeof obj.preference_note === "string"
+      ? obj.preference_note.trim()
+      : "",
     language: typeof obj.language === "string" ? obj.language.trim() : "",
   };
 }

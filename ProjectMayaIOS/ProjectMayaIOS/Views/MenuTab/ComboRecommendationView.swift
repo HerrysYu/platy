@@ -57,13 +57,14 @@ struct ComboRecommendationView: View {
         // The combo result language follows the app (iOS system) language.
         let language = UserLanguagePreferences.appLanguage
 
-        var preferences = ComboPreferences(allergies: [], diets: [], country: "", language: language)
+        var preferences = ComboPreferences(allergies: [], diets: [], country: "", preferenceNote: "", language: language)
         if let token, let userID,
            let profile = try? await SupabaseClient().fetchProfile(authToken: token, userID: userID) {
             preferences = ComboPreferences(
                 allergies: profile.allergies ?? [],
                 diets: profile.dietaryPreferences ?? [],
                 country: profile.country ?? "",
+                preferenceNote: profile.preferenceNote ?? "",
                 language: language
             )
         }

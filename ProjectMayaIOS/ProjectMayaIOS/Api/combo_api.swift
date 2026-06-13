@@ -33,7 +33,14 @@ struct ComboPreferences: Codable {
     let allergies: [String]
     let diets: [String]
     let country: String
+    let preferenceNote: String
     let language: String
+
+    enum CodingKeys: String, CodingKey {
+        case allergies, diets, country
+        case preferenceNote = "preference_note"
+        case language
+    }
 }
 
 private struct ComboRequest: Codable {

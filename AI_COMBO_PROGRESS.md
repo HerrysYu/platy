@@ -83,6 +83,15 @@ cd /Users/herrysyu/Documents/platy/ProjectMayaIOS && xcodebuild -project Project
 - [x] R4-4a 设置页(UserCenterPage)整页重写为内联编辑:Region 内联 TextField(已选显示真实值,空显示 "Select Country" 占位)+ 过敏原/饮食 chips + App/Menu 语言 segmented,改动经 UserSettingsViewModel(@StateObject,600ms 防抖)自动 upsert Supabase,顶部显示 saving/Saved。删除跳转 PreferencesPage;PreferencesPage.swift 已删(无其他引用)
 - [x] R4-4b 移除 smart filter:删 Services/SmartMenuTextFilter.swift + Services/MLXSmartMenuTextFilter.swift;PhotoPreviewPage.processSingleImage 去掉过滤直接用 OCR;UserCenterPage 清掉全部 smart filter 代码。**并从 pbxproj 移除 SPM 依赖**(mlx-swift-lm/swift-transformers/swift-huggingface 及 MLXLLM/MLXLMCommon/MLXHuggingFace/HuggingFace/Tokenizers 五个 product),构建确认 mlx bundle 已从 app 移除。pbxproj 备份在 /tmp/project.pbxproj.bak
 
+## Round 5(2026-06-14 用户追加)checklist — ✅ 全部完成,BUILD SUCCEEDED,edge functions 已部署+冒烟通过
+- [x] R5-1 语言功能未丢失(已核实):MenuTextLanguageDetector.swift 在(translation_api.swift skip-same-language 接入),Localizable.xcstrings 在,knownRegions 含 zh-Hans,UserLanguagePreferences.appLanguage 跟随系统。三项均健在,无需修复
+- [x] R5-2 region→自然语言偏好描述:迁移 20260614020000_add_preference_note.sql(已 push);SupabaseProfileRecord/upsertProfile 加 preferenceNote;UserCenterPage Region→"Your Tastes" 多行 TextField(axis .vertical, 3...6 行);VM country→preferenceNote(country 仍以 "" 写入)
+- [x] R5-3 点菜偏好分析:新 edge function dish_advice_api(单次 Gemini,gemini-2.5-flash 优先,无 tools,~4s warm);Api/dish_advice_api.swift(无偏好则跳过不调用);DishDetailModel 并行 adviceTask(读 profile→调用);DishDetailView 顶部 DishAdviceCard(avoid=danger红/caution=accent金,summary+notes 圆点列表)。冒烟:宫保鸡丁+花生过敏+素食+不吃辣→avoid 3 条精准 notes
+- [x] R5-4 加入列表即时可用:DishDetailView "Add to Order" 去掉 canAddToOrder 门槛,立即可点(name 已知)
+- [x] R5-5 最近 5 条:MealHistory maxMeals=5,addMeal/refreshFromRemote 溢出删最早(本地+远端 deleteMealRemote);新增 deleteMeal/deleteMeals;SupabaseClient.deleteMeal(REST DELETE);MealHistoryPage 每条右上 × 删除(sibling overlay 不被点击吞)+ "Only your 5 most recent scans are kept." 提示
+- [x] R5-6 提速:combo_recommend_api agent 多轮(4-6 串行调用,~20s)→ 单次 generateContent 内联 menu+prefs(menu-match 不过仅 1 次重试),删 web_search/buildAgentPrompt/groundedWebSearch/MAX_AGENT_STEPS。**warm 3.6-6s**(原 ~20s)。dish advice 快模型+低 token 并行
+- 待办(非阻塞):新增英文 UI 串("Your Tastes"/"Best to avoid"/"Worth checking"/"For you"/"Only your 5 most recent scans are kept." 等)尚无 zh-Hans 翻译,建议在 Xcode String Catalog 补。中文系统下这些暂显英文
+
 ## 当前状态
 ✅ **全部完成(2026-06-10)**。云端已部署并通过流式/非流式冒烟测试;iOS 编译通过。
 剩余可选项(未做,按需):真机端到端走查 UI;删除冒烟测试用户 combo-smoke-test-20260610@example.com(Supabase Dashboard → Auth)。

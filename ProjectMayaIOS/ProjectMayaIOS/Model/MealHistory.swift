@@ -66,6 +66,8 @@ final class MealHistoryService: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let mealsKey = "saved_meals"
     private let supabaseClient = SupabaseClient()
+    /// Server storage is limited, so keep only the most recent few scans.
+    private let maxMeals = 5
 
     /// Meals carry full image data, which blows past the ~4MB UserDefaults
     /// cap and silently fails to persist. Store them as a file instead.
@@ -124,8 +126,18 @@ final class MealHistoryService: ObservableObject {
             // made it to Supabase aren't dropped from the UI.
             let remoteIDs = Set(remoteMeals.map(\.id))
             let localOnly = recentMeals.filter { !remoteIDs.contains($0.id) }
-            recentMeals = (remoteMeals + localOnly)
+            let merged = (remoteMeals + localOnly)
                 .sorted { $0.timestamp > $1.timestamp }
+
+            // Enforce the storage cap: drop (and remotely delete) the overflow.
+            if merged.count > maxMeals {
+                for old in merged.suffix(from: maxMeals) {
+                    deleteMealRemote(old.id)
+                }
+                recentMeals = Array(merged.prefix(maxMeals))
+            } else {
+                recentMeals = merged
+            }
             saveMeals()
             print("☁️ Synced \(remoteMeals.count) meals from Supabase (kept \(localOnly.count) local-only)")
         } catch {
@@ -142,15 +154,48 @@ final class MealHistoryService: ObservableObject {
         )
         
         recentMeals.insert(meal, at: 0) // Add to beginning for most recent first
-        
-        // Keep only the most recent 20 meals
-        if recentMeals.count > 20 {
-            recentMeals = Array(recentMeals.prefix(20))
+
+        // Keep only the most recent `maxMeals`; delete the overflow from the
+        // server too so its storage stays bounded.
+        if recentMeals.count > maxMeals {
+            for old in recentMeals.suffix(from: maxMeals) {
+                deleteMealRemote(old.id)
+            }
+            recentMeals = Array(recentMeals.prefix(maxMeals))
         }
-        
+
         saveMeals()
         syncMealToRemote(meal)
         print("✅ Added new meal to history: \(meal.displayName)")
+    }
+
+    /// Remove a meal the user no longer wants (local + remote).
+    func deleteMeal(_ meal: CompletedMeal) {
+        recentMeals.removeAll { $0.id == meal.id }
+        saveMeals()
+        deleteMealRemote(meal.id)
+        print("🗑️ Deleted meal: \(meal.displayName)")
+    }
+
+    func deleteMeals(at offsets: IndexSet) {
+        let targets = offsets.map { recentMeals[$0] }
+        recentMeals.remove(atOffsets: offsets)
+        saveMeals()
+        for meal in targets {
+            deleteMealRemote(meal.id)
+        }
+    }
+
+    private func deleteMealRemote(_ id: UUID) {
+        guard let token = authService?.getAuthToken() else { return }
+        Task {
+            do {
+                try await supabaseClient.deleteMeal(id: id, authToken: token)
+                print("☁️ Removed meal from Supabase: \(id)")
+            } catch {
+                print("⚠️ Supabase meal delete failed: \(error.localizedDescription)")
+            }
+        }
     }
     
     /// Load meals from local storage (file first, legacy UserDefaults as

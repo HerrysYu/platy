@@ -42,6 +42,7 @@ struct SupabaseProfileRecord: Codable {
     let allergies: [String]?
     let dietaryPreferences: [String]?
     let country: String?
+    let preferenceNote: String?
     let systemLanguage: String?
     let menuLanguage: String?
 
@@ -50,6 +51,7 @@ struct SupabaseProfileRecord: Codable {
         case allergies
         case dietaryPreferences = "dietary_preferences"
         case country
+        case preferenceNote = "preference_note"
         case systemLanguage = "system_language"
         case menuLanguage = "menu_language"
     }
@@ -105,6 +107,16 @@ final class SupabaseClient {
         _ = try await perform(request: request)
     }
 
+    func deleteMeal(id: UUID, authToken: String) async throws {
+        let url = try supabaseRESTURL(path: "meals", queryItems: [
+            URLQueryItem(name: "id", value: "eq.\(id.uuidString)")
+        ])
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        addAuthHeaders(to: &request, authToken: authToken)
+        _ = try await perform(request: request)
+    }
+
     func fetchProfile(authToken: String, userID: UUID) async throws -> SupabaseProfileRecord? {
         let url = try supabaseRESTURL(path: "profiles", queryItems: [
             URLQueryItem(name: "select", value: "*"),
@@ -122,6 +134,7 @@ final class SupabaseClient {
         allergies: [String],
         dietaryPreferences: [String],
         country: String,
+        preferenceNote: String,
         systemLanguage: String,
         menuLanguage: String
     ) async throws {
@@ -130,6 +143,7 @@ final class SupabaseClient {
             allergies: allergies.isEmpty ? nil : allergies,
             dietaryPreferences: dietaryPreferences.isEmpty ? nil : dietaryPreferences,
             country: country.isEmpty ? nil : country,
+            preferenceNote: preferenceNote.isEmpty ? nil : preferenceNote,
             systemLanguage: systemLanguage.isEmpty ? nil : systemLanguage,
             menuLanguage: menuLanguage.isEmpty ? nil : menuLanguage
         )
