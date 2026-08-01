@@ -17,12 +17,19 @@ class DishDetailViewModel: ObservableObject {
     private let authService: AuthService
     private let initialLanguage: String?
     private let dishName: String
+    private let originalDishName: String
     private var loadTask: Task<Void, Never>?
     private var imageTask: Task<Void, Never>?
     private var adviceTask: Task<Void, Never>?
 
-    init(dishName: String, language: String? = nil, authService: AuthService) {
+    init(
+        dishName: String,
+        originalDishName: String,
+        language: String? = nil,
+        authService: AuthService
+    ) {
         self.dishName = dishName
+        self.originalDishName = originalDishName
         self.authService = authService
         self.initialLanguage = language
         self.service = DishService(authService: authService)
@@ -85,7 +92,9 @@ class DishDetailViewModel: ObservableObject {
             guard let self else { return }
 
             do {
-                let media = try await self.service.getDishImages(dishName: self.dishName)
+                let media = try await self.service.getDishImages(
+                    originalName: self.originalDishName
+                )
                 guard !Task.isCancelled, !media.isEmpty else { return }
 
                 await MainActor.run {

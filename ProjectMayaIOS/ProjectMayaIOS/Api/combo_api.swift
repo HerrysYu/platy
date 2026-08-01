@@ -67,9 +67,8 @@ private struct ComboErrorPayload: Codable {
 
 // MARK: - Combo Service
 
-/// Calls the `combo_recommend_api` edge function. The cloud side runs a Gemini
-/// agent (menu reader + preference reader + web search tools) and streams
-/// status events before the final combo JSON.
+/// Calls the `combo_recommend_api` edge function. The cloud side uses GPT-5.6
+/// Terra and streams status events before the final combo JSON.
 final class ComboService {
     private static let functionSlug = "combo_recommend_api"
 

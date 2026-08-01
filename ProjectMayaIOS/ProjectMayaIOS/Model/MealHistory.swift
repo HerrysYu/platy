@@ -80,7 +80,8 @@ final class MealHistoryService: ObservableObject {
         return directory.appendingPathComponent("saved_meals.json")
     }
     private weak var authService: AuthService?
-    private var isRefreshingFromRemote = false
+    private var configuredUserID: UUID?
+    private var remoteRefreshTask: Task<Void, Never>?
     private var lastRemoteRefreshDate: Date?
     private let remoteRefreshThrottle: TimeInterval = 45
     
@@ -89,18 +90,19 @@ final class MealHistoryService: ObservableObject {
     }
 
     func configure(authService: AuthService) {
-        self.authService = authService
-
-        if authService.isAuthenticated {
-            Task {
-                try? await Task.sleep(nanoseconds: 700_000_000)
-                await refreshFromRemoteIfNeeded()
-            }
+        if configuredUserID != authService.currentUserID {
+            configuredUserID = authService.currentUserID
+            lastRemoteRefreshDate = nil
         }
+        self.authService = authService
     }
 
     func refreshFromRemoteIfNeeded(force: Bool = false) async {
-        guard !isRefreshingFromRemote else { return }
+        if let remoteRefreshTask {
+            await remoteRefreshTask.value
+            return
+        }
+
         if !force,
            let lastRemoteRefreshDate,
            Date().timeIntervalSince(lastRemoteRefreshDate) < remoteRefreshThrottle {
@@ -111,16 +113,24 @@ final class MealHistoryService: ObservableObject {
 
     func refreshFromRemote() async {
         guard let token = authService?.getAuthToken() else { return }
-        guard !isRefreshingFromRemote else { return }
 
+        if let remoteRefreshTask {
+            await remoteRefreshTask.value
+            return
+        }
+
+        let task = Task<Void, Never> { [weak self] in
+            guard let self else { return }
+            await self.performRemoteRefresh(authToken: token)
+        }
+        remoteRefreshTask = task
+        await task.value
+        remoteRefreshTask = nil
+    }
+
+    private func performRemoteRefresh(authToken: String) async {
         do {
-            isRefreshingFromRemote = true
-            defer {
-                isRefreshingFromRemote = false
-                lastRemoteRefreshDate = Date()
-            }
-
-            let remoteMeals = try await supabaseClient.fetchMeals(authToken: token)
+            let remoteMeals = try await supabaseClient.fetchMeals(authToken: authToken)
 
             // Merge instead of overwrite so locally-saved meals that never
             // made it to Supabase aren't dropped from the UI.
@@ -139,6 +149,7 @@ final class MealHistoryService: ObservableObject {
                 recentMeals = merged
             }
             saveMeals()
+            lastRemoteRefreshDate = Date()
             print("☁️ Synced \(remoteMeals.count) meals from Supabase (kept \(localOnly.count) local-only)")
         } catch {
             print("⚠️ Supabase meal sync failed: \(error.localizedDescription)")

@@ -30,20 +30,31 @@ struct ProjectMayaIOSApp: App {
                 // Connect OrderManager to MealHistoryService
                 orderManager.setMealHistoryService(mealHistoryService)
                 mealHistoryService.configure(authService: authService)
+                refreshMealHistoryAfterAuthentication(force: true)
             }
             .onChange(of: authService.isAuthenticated) { _, isAuthenticated in
                 if isAuthenticated {
-                    mealHistoryService.configure(authService: authService)
+                    refreshMealHistoryAfterAuthentication(force: true)
                 }
             }
             .onChange(of: scenePhase) { _, phase in
                 // Cold/warm wake from background: renew the token if it
                 // expired while suspended, then pull fresh meal history.
                 guard phase == .active, authService.isAuthenticated else { return }
-                authService.refreshSessionIfNeeded { success in
-                    guard success else { return }
-                    Task { await mealHistoryService.refreshFromRemoteIfNeeded() }
-                }
+                refreshMealHistoryAfterAuthentication(force: false)
+            }
+        }
+    }
+
+    private func refreshMealHistoryAfterAuthentication(force: Bool) {
+        guard authService.isAuthenticated else { return }
+
+        authService.refreshSessionIfNeeded { success in
+            guard success else { return }
+
+            Task { @MainActor in
+                mealHistoryService.configure(authService: authService)
+                await mealHistoryService.refreshFromRemoteIfNeeded(force: force)
             }
         }
     }

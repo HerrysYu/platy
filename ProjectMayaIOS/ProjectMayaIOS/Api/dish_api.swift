@@ -77,7 +77,7 @@ private struct DishImageSearchResult: Codable {
 
 // MARK: - Dish Service
 final class DishService {
-    private static let functionSlug = "dish_detail_api_gemini"
+    private static let functionSlug = "dish_detail_new"
     private static let imageFunctionSlug = "get_dish_images"
 
     private let authService: AuthService
@@ -88,8 +88,8 @@ final class DishService {
         self.session = session
     }
 
-    /// Fetch dish images from the dedicated image-search function. This stays separate from text detail generation.
-    func getDishImages(dishName: String, limit: Int = 6) async throws -> [DishMedia] {
+    /// Fetch dish images using the original menu text, never the translated display name.
+    func getDishImages(originalName: String, limit: Int = 6) async throws -> [DishMedia] {
         guard let authHeader = authService.getAuthHeader() else {
             throw TranslationError.authenticationRequired
         }
@@ -99,7 +99,7 @@ final class DishService {
             resolvingAgainstBaseURL: false
         )
         components?.queryItems = [
-            URLQueryItem(name: "q", value: dishName),
+            URLQueryItem(name: "original_name", value: originalName),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "hl", value: "zh-cn"),
             URLQueryItem(name: "gl", value: "cn")

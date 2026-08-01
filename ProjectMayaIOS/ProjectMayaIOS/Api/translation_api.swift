@@ -142,6 +142,8 @@ private struct SupabaseTranslationResponse: Codable {
 private struct SupabaseTranslatedWord: Codable {
     let detectedSourceLang: String?
     let text: String
+    let filteredOriginal: String?
+    let isDishName: Bool?
 }
 
 private struct SupabaseFunctionError: Codable {
@@ -307,19 +309,35 @@ final class TranslationService: ObservableObject {
         completion: @escaping (Result<[TranslatedTextBox], Error>) -> Void
     ) {
         let words = ocrResults.map(\.text)
-        let targetCode = deeplCode(for: targetLanguage)
+        let targetCode = translationTargetCode(for: targetLanguage)
 
         invokeTranslationFunction(words: words, targetLanguage: targetCode) { result in
             switch result {
             case .success(let response):
                 let boxes: [TranslatedTextBox] = ocrResults.enumerated().compactMap { index, result in
-                    let translated = index < response.translations.count
-                        ? response.translations[index]
-                        : SupabaseTranslatedWord(detectedSourceLang: nil, text: result.text)
+                    guard index < response.translations.count else {
+                        return nil
+                    }
+                    let translated = response.translations[index]
+                    guard translated.isDishName != false else {
+                        return nil
+                    }
+
+                    let translatedText = translated.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !translatedText.isEmpty else {
+                        return nil
+                    }
+
+                    let filteredOriginal = translated.filteredOriginal?
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if translated.isDishName == true, filteredOriginal?.isEmpty != false {
+                        return nil
+                    }
+                    let originalText = filteredOriginal ?? result.text
 
                     // DeepL's own language detection is the safety net for
                     // same-language text the local detector missed.
-                    let hasLetters = result.text.unicodeScalars.contains { CharacterSet.letters.contains($0) }
+                    let hasLetters = originalText.unicodeScalars.contains { CharacterSet.letters.contains($0) }
                     if hasLetters,
                        MenuTextLanguageDetector.detectedSource(translated.detectedSourceLang, matchesDeepLTarget: targetCode) {
                         return nil
@@ -331,8 +349,8 @@ final class TranslationService: ObservableObject {
                         width: Double(result.boundingBox.width),
                         height: Double(result.boundingBox.height),
                         rotation: result.angle,
-                        originalText: result.text,
-                        translatedText: translated.text,
+                        originalText: originalText,
+                        translatedText: translatedText,
                         language: translated.detectedSourceLang ?? "auto"
                     )
                 }
@@ -355,7 +373,9 @@ final class TranslationService: ObservableObject {
 
         var request = URLRequest(url: PlatyConfig.functionURL("translation_service"))
         request.httpMethod = "POST"
-        request.timeoutInterval = 35
+        // Gemini filtering and DeepL translation run sequentially in the Edge
+        // Function, so leave enough room for a transient Gemini endpoint retry.
+        request.timeoutInterval = 75
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(PlatyConfig.supabasePublishableKey, forHTTPHeaderField: "apikey")
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -405,7 +425,7 @@ final class TranslationService: ObservableObject {
         return String(data: data, encoding: .utf8) ?? "Function request failed"
     }
 
-    private func deeplCode(for language: String) -> String {
+    private func translationTargetCode(for language: String) -> String {
         switch language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "english", "en":
             return "EN"

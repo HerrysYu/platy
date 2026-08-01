@@ -17,7 +17,13 @@ struct DishDetailView: View {
     private let originalName: String
     init(translatedName: String, originalName: String, authService: AuthService) {
         self.originalName = originalName
-        _viewModel = StateObject(wrappedValue: DishDetailViewModel(dishName: translatedName, authService: authService))
+        _viewModel = StateObject(
+            wrappedValue: DishDetailViewModel(
+                dishName: translatedName,
+                originalDishName: originalName,
+                authService: authService
+            )
+        )
     }
     
     var body: some View {

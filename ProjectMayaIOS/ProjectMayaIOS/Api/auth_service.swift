@@ -68,6 +68,8 @@ final class AuthService: ObservableObject {
     private var authToken: String?
     private var refreshToken: String?
     private var tokenExpiry: Date?
+    private var isRefreshingSession = false
+    private var refreshSessionCompletions: [(Bool) -> Void] = []
 
     init() {
         restoreSession()
@@ -329,12 +331,19 @@ final class AuthService: ObservableObject {
     }
 
     private func refreshSession(completion: ((Bool) -> Void)? = nil) {
+        if let completion {
+            refreshSessionCompletions.append(completion)
+        }
+
+        guard !isRefreshingSession else { return }
+
         guard let refreshToken, !refreshToken.isEmpty else {
             signOut()
-            completion?(false)
+            finishSessionRefresh(success: false)
             return
         }
 
+        isRefreshingSession = true
         let url = PlatyConfig.authURL("token").appending(queryItems: [
             URLQueryItem(name: "grant_type", value: "refresh_token")
         ])
@@ -346,17 +355,24 @@ final class AuthService: ObservableObject {
                 if response.accessToken != nil {
                     self?.applySession(response, fallbackEmail: self?.currentUser ?? "")
                     print("🔐 Session refreshed")
-                    completion?(true)
+                    self?.finishSessionRefresh(success: true)
                 } else {
                     self?.signOut()
-                    completion?(false)
+                    self?.finishSessionRefresh(success: false)
                 }
             case .failure(let error):
                 print("⚠️ Session refresh failed: \(error.localizedDescription)")
                 self?.signOut()
-                completion?(false)
+                self?.finishSessionRefresh(success: false)
             }
         }
+    }
+
+    private func finishSessionRefresh(success: Bool) {
+        isRefreshingSession = false
+        let completions = refreshSessionCompletions
+        refreshSessionCompletions.removeAll()
+        completions.forEach { $0(success) }
     }
 
     private func decodeUserID(from token: String) -> UUID? {

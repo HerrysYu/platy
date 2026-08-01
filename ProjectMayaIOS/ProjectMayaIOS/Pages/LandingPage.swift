@@ -102,12 +102,13 @@ struct LandingPage: View {
                 MenuPage(menuImageList: meal.menuImages, menuBlocksList: meal.menuBlocks, authService: authService, saveOnAppear: false)
             }
         }
-        .onAppear {
+        .task(id: authService.currentUserID) {
             vm.setService(RealMealService(historyService: mealHistoryService))
-        }
-        .task {
+            mealHistoryService.configure(authService: authService)
+            await mealHistoryService.refreshFromRemoteIfNeeded(
+                force: mealHistoryService.recentMeals.isEmpty
+            )
             await vm.load()
-            await mealHistoryService.refreshFromRemoteIfNeeded()
         }
         .onReceive(mealHistoryService.$recentMeals) { _ in
             // Re-render once the remote sync (or a new save) lands, so a cold
