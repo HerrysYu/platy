@@ -15,12 +15,20 @@ struct DishDetailView: View {
     @State private var aboutDescriptionHeight: CGFloat = 0
     
     private let originalName: String
-    init(translatedName: String, originalName: String, authService: AuthService) {
+    init(
+        translatedName: String,
+        originalName: String,
+        categoryOriginal: String? = nil,
+        menuTitleOriginal: String? = nil,
+        authService: AuthService
+    ) {
         self.originalName = originalName
         _viewModel = StateObject(
             wrappedValue: DishDetailViewModel(
                 dishName: translatedName,
                 originalDishName: originalName,
+                categoryOriginal: categoryOriginal,
+                menuTitleOriginal: menuTitleOriginal,
                 authService: authService
             )
         )

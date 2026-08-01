@@ -172,7 +172,9 @@ struct DoneButton: View {
                         CGFloat(box.y + box.height),   // ymax (box2D[2])
                         CGFloat(box.x + box.width)   // xmax (box2D[3])
                     ],
-                    translatedText: box.translatedText
+                    translatedText: box.translatedText,
+                    categoryOriginal: box.categoryOriginal,
+                    menuTitleOriginal: box.menuTitleOriginal
                 )
             }
             return MenuBlocks(BlockList: BlockList(blocks: textBlocks))

@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
+const MAX_ORIGINAL_NAME_LENGTH = 200;
+const MAX_CONTEXT_LENGTH = 160;
+const MAX_SEARCH_QUERY_LENGTH = 400;
 
 type SerpApiImageResult = {
   position?: number;
@@ -58,6 +61,35 @@ function cleanString(value: unknown): string | undefined {
   return clean ? clean : undefined;
 }
 
+function cleanSearchTerm(
+  value: unknown,
+  maxLength: number,
+): string | undefined {
+  const clean = cleanString(value)?.replace(/\s+/g, " ");
+  return clean?.slice(0, maxLength);
+}
+
+function buildSearchQuery(
+  originalName: string,
+  category?: string,
+  menuContext?: string,
+): string {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+
+  for (const value of [originalName, category, menuContext]) {
+    if (!value) continue;
+
+    const dedupeKey = value.normalize("NFKC").toLowerCase();
+    if (seen.has(dedupeKey)) continue;
+
+    seen.add(dedupeKey);
+    parts.push(value);
+  }
+
+  return parts.join(" ").slice(0, MAX_SEARCH_QUERY_LENGTH).trim();
+}
+
 function getRequiredEnv(name: string): string {
   const value = Deno.env.get(name);
   if (value?.trim()) return value.trim();
@@ -70,7 +102,10 @@ async function fetchWithTimeout(
   timeoutMs = 20000,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort("Request timeout"), timeoutMs);
+  const timer = setTimeout(
+    () => controller.abort("Request timeout"),
+    timeoutMs,
+  );
 
   try {
     return await fetch(input, {
@@ -98,18 +133,24 @@ async function serpApiImageSearch(
     ijn: "0",
   });
 
-  const res = await fetchWithTimeout(`${SERPAPI_ENDPOINT}?${params.toString()}`);
+  const res = await fetchWithTimeout(
+    `${SERPAPI_ENDPOINT}?${params.toString()}`,
+  );
   const body = await res.text();
 
   if (!res.ok) {
-    throw new Error(`SerpApi image search failed: HTTP ${res.status} ${body.slice(0, 300)}`);
+    throw new Error(
+      `SerpApi image search failed: HTTP ${res.status} ${body.slice(0, 300)}`,
+    );
   }
 
   let data: any;
   try {
     data = JSON.parse(body);
   } catch {
-    throw new Error(`SerpApi returned non-JSON response: ${body.slice(0, 300)}`);
+    throw new Error(
+      `SerpApi returned non-JSON response: ${body.slice(0, 300)}`,
+    );
   }
 
   if (typeof data?.error === "string" && data.error.trim()) {
@@ -175,27 +216,42 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const qRaw = (url.searchParams.get("q") ?? "").trim();
+    const originalName = cleanSearchTerm(
+      url.searchParams.get("original_name"),
+      MAX_ORIGINAL_NAME_LENGTH,
+    ) ??
+      cleanSearchTerm(
+        url.searchParams.get("q"),
+        MAX_ORIGINAL_NAME_LENGTH,
+      );
+    const category = cleanSearchTerm(
+      url.searchParams.get("category"),
+      MAX_CONTEXT_LENGTH,
+    );
+    const menuContext = cleanSearchTerm(
+      url.searchParams.get("menu_context"),
+      MAX_CONTEXT_LENGTH,
+    );
     const limitRaw = Number(url.searchParams.get("limit") ?? "12");
     const hl = (url.searchParams.get("hl") ?? "zh-cn").trim() || "zh-cn";
     const gl = (url.searchParams.get("gl") ?? "cn").trim() || "cn";
 
-    const q = qRaw.slice(0, 200);
     const limit = clamp(Number.isFinite(limitRaw) ? limitRaw : 12, 1, 25);
 
-    if (!q) {
+    if (!originalName) {
       return json(
-        { error: "Missing query param `q`." },
+        { error: "Missing query param `original_name`." },
         400,
         cors,
       );
     }
 
-    const results = await serpApiImageSearch(q, limit, hl, gl);
+    const query = buildSearchQuery(originalName, category, menuContext);
+    const results = await serpApiImageSearch(query, limit, hl, gl);
 
     return json(
       {
-        query: q,
+        query,
         provider: "serpapi",
         engine: "google_images",
         count: results.length,

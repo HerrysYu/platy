@@ -10,6 +10,8 @@ private struct SelectedDish: Identifiable {
     let id = UUID()
     let translated: String
     let original: String
+    let categoryOriginal: String?
+    let menuTitleOriginal: String?
 }
 
 // Core OCR overlay functionality
@@ -97,7 +99,12 @@ private struct OCRImageOverlayCore: View {
                                 onSelect: { translated in
                                     let cleanedTranslated = translated.trimmingCharacters(in: .whitespacesAndNewlines)
                                     guard !cleanedTranslated.isEmpty else { return }
-                                    selectedDish = SelectedDish(translated: cleanedTranslated, original: block.text)
+                                    selectedDish = SelectedDish(
+                                        translated: cleanedTranslated,
+                                        original: block.text,
+                                        categoryOriginal: block.categoryOriginal,
+                                        menuTitleOriginal: block.menuTitleOriginal
+                                    )
                                 }
                             )
                             .position(x: transformedPosition.x, y: transformedPosition.y)
@@ -204,7 +211,13 @@ struct OCRImageOverlayContent: View {
             onZoomChange: onZoomChange
         )
         .sheet(item: $selectedDish) { selected in
-            DishDetailView(translatedName: selected.translated, originalName: selected.original, authService: authService)
+            DishDetailView(
+                translatedName: selected.translated,
+                originalName: selected.original,
+                categoryOriginal: selected.categoryOriginal,
+                menuTitleOriginal: selected.menuTitleOriginal,
+                authService: authService
+            )
         }
     }
 }

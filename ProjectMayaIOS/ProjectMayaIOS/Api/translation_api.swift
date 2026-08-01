@@ -36,12 +36,16 @@ struct TextBox: Codable {
     let originalText: String
     let translatedText: String
     let language: String
+    let categoryOriginal: String?
+    let menuTitleOriginal: String?
 
     enum CodingKeys: String, CodingKey {
         case x, y, width, height, rotation
         case originalText = "original_text"
         case translatedText = "translated_text"
         case language
+        case categoryOriginal = "category_original"
+        case menuTitleOriginal = "menu_title_original"
     }
 }
 
@@ -119,17 +123,32 @@ struct TranslatedTextBox: Codable {
     let originalText: String
     let translatedText: String
     let language: String
+    let categoryOriginal: String?
+    let menuTitleOriginal: String?
 
     enum CodingKeys: String, CodingKey {
         case x, y, width, height, rotation
         case originalText = "original_text"
         case translatedText = "translated_text"
         case language
+        case categoryOriginal = "category_original"
+        case menuTitleOriginal = "menu_title_original"
     }
+}
+
+private struct SupabaseOCRItem: Codable {
+    let index: Int
+    let text: String
+    let x: Double
+    let y: Double
+    let width: Double
+    let height: Double
+    let shouldTranslate: Bool
 }
 
 private struct SupabaseTranslationRequest: Codable {
     let words: [String]
+    let items: [SupabaseOCRItem]
     let targetLang: String
 }
 
@@ -143,6 +162,8 @@ private struct SupabaseTranslatedWord: Codable {
     let detectedSourceLang: String?
     let text: String
     let filteredOriginal: String?
+    let categoryOriginal: String?
+    let menuTitleOriginal: String?
     let isDishName: Bool?
 }
 
@@ -191,7 +212,9 @@ final class TranslationService: ObservableObject {
                             rotation: Int($0.rotation),
                             originalText: $0.originalText,
                             translatedText: $0.translatedText,
-                            language: $0.language
+                            language: $0.language,
+                            categoryOriginal: $0.categoryOriginal,
+                            menuTitleOriginal: $0.menuTitleOriginal
                         )
                     }
                     completion(.success(TranslationResponse(
@@ -243,19 +266,20 @@ final class TranslationService: ObservableObject {
     func processOCRResults(
         ocrImageResult: OCRImageResult,
         targetLanguage: String,
-        batchSize: Int = 50,
+        batchSize: Int = 120,
         completion: @escaping (Result<OCRProcessingResponse, Error>) -> Void
     ) {
         let startedAt = Date()
 
-        // Blocks already written in the target language are skipped entirely:
-        // they are never sent to DeepL and never get an overlay box.
-        let resultsToTranslate = ocrImageResult.ocrResults.filter { result in
+        // Keep the full page in Gemini's single hierarchy pass so headings in
+        // the target language still provide context. Each item separately
+        // tells the Edge Function whether its dish text needs DeepL.
+        let hasTextToTranslate = ocrImageResult.ocrResults.contains { result in
             !MenuTextLanguageDetector.isText(result.text, alreadyIn: targetLanguage)
         }
-        let batches = resultsToTranslate.chunked(size: batchSize)
+        let batches = ocrImageResult.ocrResults.chunked(size: batchSize)
 
-        guard !batches.isEmpty else {
+        guard hasTextToTranslate, !batches.isEmpty else {
             completion(.success(OCRProcessingResponse(
                 imageId: UUID().uuidString,
                 originalImageWidth: Int(ocrImageResult.imageWidth),
@@ -273,7 +297,12 @@ final class TranslationService: ObservableObject {
 
         for (batchIndex, batch) in batches.enumerated() {
             group.enter()
-            translateOCRBatch(batch, targetLanguage: targetLanguage) { result in
+            translateOCRBatch(
+                batch,
+                imageWidth: ocrImageResult.imageWidth,
+                imageHeight: ocrImageResult.imageHeight,
+                targetLanguage: targetLanguage
+            ) { result in
                 switch result {
                 case .success(let boxes):
                     translatedBatches[batchIndex] = boxes
@@ -305,13 +334,31 @@ final class TranslationService: ObservableObject {
 
     private func translateOCRBatch(
         _ ocrResults: [OCRResult],
+        imageWidth: CGFloat,
+        imageHeight: CGFloat,
         targetLanguage: String,
         completion: @escaping (Result<[TranslatedTextBox], Error>) -> Void
     ) {
         let words = ocrResults.map(\.text)
         let targetCode = translationTargetCode(for: targetLanguage)
+        let normalizedWidth = max(Double(imageWidth), 1)
+        let normalizedHeight = max(Double(imageHeight), 1)
+        let items = ocrResults.enumerated().map { index, result in
+            SupabaseOCRItem(
+                index: index,
+                text: result.text,
+                x: Double(result.boundingBox.x) / normalizedWidth,
+                y: Double(result.boundingBox.y) / normalizedHeight,
+                width: Double(result.boundingBox.width) / normalizedWidth,
+                height: Double(result.boundingBox.height) / normalizedHeight,
+                shouldTranslate: !MenuTextLanguageDetector.isText(
+                    result.text,
+                    alreadyIn: targetLanguage
+                )
+            )
+        }
 
-        invokeTranslationFunction(words: words, targetLanguage: targetCode) { result in
+        invokeTranslationFunction(words: words, items: items, targetLanguage: targetCode) { result in
             switch result {
             case .success(let response):
                 let boxes: [TranslatedTextBox] = ocrResults.enumerated().compactMap { index, result in
@@ -334,6 +381,10 @@ final class TranslationService: ObservableObject {
                         return nil
                     }
                     let originalText = filteredOriginal ?? result.text
+                    let categoryOriginal = translated.categoryOriginal?
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let menuTitleOriginal = translated.menuTitleOriginal?
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
 
                     // DeepL's own language detection is the safety net for
                     // same-language text the local detector missed.
@@ -351,7 +402,9 @@ final class TranslationService: ObservableObject {
                         rotation: result.angle,
                         originalText: originalText,
                         translatedText: translatedText,
-                        language: translated.detectedSourceLang ?? "auto"
+                        language: translated.detectedSourceLang ?? "auto",
+                        categoryOriginal: categoryOriginal?.isEmpty == false ? categoryOriginal : nil,
+                        menuTitleOriginal: menuTitleOriginal?.isEmpty == false ? menuTitleOriginal : nil
                     )
                 }
                 completion(.success(boxes))
@@ -363,6 +416,7 @@ final class TranslationService: ObservableObject {
 
     private func invokeTranslationFunction(
         words: [String],
+        items: [SupabaseOCRItem],
         targetLanguage: String,
         completion: @escaping (Result<SupabaseTranslationResponse, Error>) -> Void
     ) {
@@ -381,7 +435,13 @@ final class TranslationService: ObservableObject {
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
 
         do {
-            request.httpBody = try JSONEncoder().encode(SupabaseTranslationRequest(words: words, targetLang: targetLanguage))
+            request.httpBody = try JSONEncoder().encode(
+                SupabaseTranslationRequest(
+                    words: words,
+                    items: items,
+                    targetLang: targetLanguage
+                )
+            )
         } catch {
             completion(.failure(error))
             return

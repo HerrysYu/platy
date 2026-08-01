@@ -18,6 +18,8 @@ class DishDetailViewModel: ObservableObject {
     private let initialLanguage: String?
     private let dishName: String
     private let originalDishName: String
+    private let categoryOriginal: String?
+    private let menuTitleOriginal: String?
     private var loadTask: Task<Void, Never>?
     private var imageTask: Task<Void, Never>?
     private var adviceTask: Task<Void, Never>?
@@ -25,11 +27,15 @@ class DishDetailViewModel: ObservableObject {
     init(
         dishName: String,
         originalDishName: String,
+        categoryOriginal: String? = nil,
+        menuTitleOriginal: String? = nil,
         language: String? = nil,
         authService: AuthService
     ) {
         self.dishName = dishName
         self.originalDishName = originalDishName
+        self.categoryOriginal = categoryOriginal
+        self.menuTitleOriginal = menuTitleOriginal
         self.authService = authService
         self.initialLanguage = language
         self.service = DishService(authService: authService)
@@ -93,7 +99,9 @@ class DishDetailViewModel: ObservableObject {
 
             do {
                 let media = try await self.service.getDishImages(
-                    originalName: self.originalDishName
+                    originalName: self.originalDishName,
+                    categoryOriginal: self.categoryOriginal,
+                    menuTitleOriginal: self.menuTitleOriginal
                 )
                 guard !Task.isCancelled, !media.isEmpty else { return }
 
@@ -126,6 +134,9 @@ class DishDetailViewModel: ObservableObject {
             do {
                 let finalDetail = try await self.service.streamDishDetail(
                     dishName: self.dishName,
+                    originalDishName: self.originalDishName,
+                    categoryOriginal: self.categoryOriginal,
+                    menuTitleOriginal: self.menuTitleOriginal,
                     language: language,
                     onTitle: { [weak self] title in
                         guard let viewModel = self else { return }

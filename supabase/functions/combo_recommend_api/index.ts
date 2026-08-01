@@ -1,16 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-// Gemini routing mirrors dish_detail_api_gemini: proxy base url + fallbacks.
-const GEMINI_BASE_URL =
-  Deno.env.get("GOOGLE_GEMINI_BASE_URL") ?? "https://api.cubence.com";
-const GEMINI_FALLBACK_BASE_URLS = parseList(
-  Deno.env.get("GOOGLE_GEMINI_FALLBACK_BASE_URLS") ??
-    "https://api-dmit.cubence.com,https://api-bwg.cubence.com,https://api-cf.cubence.com",
-);
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-3-flash-preview";
-const GEMINI_FALLBACK_MODELS = parseList(
-  Deno.env.get("GEMINI_FALLBACK_MODELS") ?? "gemini-2.5-flash",
-);
+const GPT_BASE_URL = "https://api-dmit.cubence.com";
+const GPT_MODEL = "gpt-5.6-terra";
 const MAX_MENU_ITEMS = 160;
 
 type MenuItem = {
@@ -42,7 +33,12 @@ type ComboRecommendation = {
 
 type StreamSender = (event: string, data: unknown) => void;
 
-console.log("combo_recommend_api started: Gemini agent combo recommendation");
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+console.log("combo_recommend_api started: GPT-5.6 Terra combo recommendation");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -134,15 +130,12 @@ function streamComboRecommendation(
 }
 
 // ---------------------------------------------------------------------------
-// Agent loop: Gemini with function calling. Tools read the menu, read the
-// user preferences, and search the web (implemented via a nested Gemini call
-// with google_search grounding, since functionDeclarations and google_search
-// cannot be combined in one request).
+// GPT-5.6 Terra combo recommendation.
 // ---------------------------------------------------------------------------
 
 // Single-shot recommendation: the menu and preferences are small enough to
 // inline into one prompt, so we skip the multi-round tool-calling agent (which
-// cost 4-6 sequential model calls) and do ONE generateContent, with at most one
+// cost 4-6 sequential model calls) and do one completion, with at most one
 // retry if the model picks an item that isn't on the scanned menu.
 async function runComboAgent(
   menuItems: MenuItem[],
@@ -154,18 +147,14 @@ async function runComboAgent(
 
   send("combo_status", { stage: "reading_menu", message: statusText("reading_menu", target) });
 
-  const contents: any[] = [
-    { role: "user", parts: [{ text: buildComboPrompt(menuItems, preferences, target) }] },
+  const messages: ChatMessage[] = [
+    { role: "user", content: buildComboPrompt(menuItems, preferences, target) },
   ];
 
   send("combo_status", { stage: "thinking", message: statusText("thinking", target) });
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const data = await callGemini(apiKey, {
-      contents,
-      generationConfig: { temperature: 0.6, maxOutputTokens: 1536 },
-    });
-    const text = extractCandidateText(data?.candidates?.[0]);
+    const text = await callGpt(apiKey, messages);
     const combo = parseComboRecommendation(text);
 
     if (combo) {
@@ -177,14 +166,12 @@ async function runComboAgent(
 
       // One corrective retry, otherwise fall back to keeping valid items only.
       if (attempt === 0) {
-        contents.push({ role: "model", parts: [{ text }] });
-        contents.push({
+        messages.push({ role: "assistant", content: text });
+        messages.push({
           role: "user",
-          parts: [{
-            text:
-              `These items are NOT on the menu: ${rejected.join(", ")}. ` +
-              "Use ONLY items from the menu list and copy original_name exactly. Output the JSON object only.",
-          }],
+          content:
+            `These items are NOT on the menu: ${rejected.join(", ")}. ` +
+            "Use ONLY items from the menu list and copy original_name exactly. Output the JSON object only.",
         });
         continue;
       }
@@ -197,10 +184,11 @@ async function runComboAgent(
     }
 
     if (attempt === 0) {
-      contents.push({ role: "model", parts: [{ text }] });
-      contents.push({
+      messages.push({ role: "assistant", content: text });
+      messages.push({
         role: "user",
-        parts: [{ text: "Output ONLY the final recommendation as one valid JSON object in the schema given. No markdown." }],
+        content:
+          "Output ONLY the final recommendation as one valid JSON object in the schema given. No markdown.",
       });
     }
   }
@@ -510,180 +498,53 @@ function extractLastJSONObjectText(text: string): string | null {
   return last;
 }
 
-function extractCandidateText(candidate: any): string {
-  const parts = candidate?.content?.parts;
-  if (!Array.isArray(parts)) return "";
-
-  return parts
-    .map((part: any) =>
-      part?.thought === true
-        ? ""
-        : typeof part?.text === "string"
-        ? part.text
-        : ""
-    )
-    .join("")
-    .trim();
-}
-
 // ---------------------------------------------------------------------------
-// Gemini transport (same routing/fallback strategy as dish_detail_api_gemini)
+// OpenAI-compatible GPT transport.
 // ---------------------------------------------------------------------------
 
-async function callGemini(apiKey: string, payload: unknown): Promise<any> {
-  const baseUrls = uniqueList(
-    [GEMINI_BASE_URL, ...GEMINI_FALLBACK_BASE_URLS].map((url) =>
-      url.replace(/\/+$/, "")
-    ),
+async function callGpt(apiKey: string, messages: ChatMessage[]): Promise<string> {
+  const endpoint = `${GPT_BASE_URL.replace(/\/+$/, "")}/v1/chat/completions`;
+  const res = await fetchWithTimeout(
+    endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "User-Agent": "ProjectMayaIOS-Supabase-Edge/1.0",
+      },
+      body: JSON.stringify({
+        model: GPT_MODEL,
+        messages,
+        response_format: { type: "json_object" },
+        stream: false,
+        reasoning_effort: "low",
+        max_completion_tokens: 2048,
+      }),
+    },
+    60000,
   );
-  const models = uniqueList([GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS]);
-  const failures: string[] = [];
 
-  for (const model of models) {
-    for (const baseUrl of baseUrls) {
-      const endpoint =
-        `${baseUrl}/v1beta/models/${encodeURIComponent(model)}:generateContent?alt=sse`;
-
-      try {
-        const res = await fetchWithTimeout(
-          endpoint,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "User-Agent": "ProjectMayaIOS-Supabase-Edge/1.0",
-              "x-goog-api-key": apiKey,
-            },
-            body: JSON.stringify(payload),
-          },
-          45000,
-        );
-
-        if (res.ok) {
-          return await parseGeminiResponse(res);
-        }
-
-        const body = await res.text();
-        failures.push(
-          `${model} @ ${baseUrl}: HTTP ${res.status} ${body.slice(0, 300)}`,
-        );
-        if (!shouldTryNextGeminiEndpoint(res.status, body)) {
-          break;
-        }
-      } catch (err) {
-        failures.push(
-          `${model} @ ${baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`GPT API failed: HTTP ${res.status} ${body.slice(0, 500)}`);
   }
 
-  throw new Error(`Gemini API failed. ${failures.join(" | ")}`);
-}
-
-async function parseGeminiResponse(res: Response): Promise<any> {
-  const contentType = res.headers.get("content-type") ?? "";
-  const text = await res.text();
-
-  if (!contentType.includes("text/event-stream")) {
-    return JSON.parse(text);
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content === "string" && content.trim()) {
+    return content.trim();
   }
 
-  const chunks: any[] = [];
-  for (const line of text.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("data:")) continue;
-
-    const payload = trimmed.slice("data:".length).trim();
-    if (!payload || payload === "[DONE]") continue;
-
-    try {
-      chunks.push(JSON.parse(payload));
-    } catch {
-      console.warn("Skipping invalid Gemini SSE payload:", payload.slice(0, 120));
-    }
+  if (Array.isArray(content)) {
+    const text = content
+      .map((part: any) => typeof part?.text === "string" ? part.text : "")
+      .join("")
+      .trim();
+    if (text) return text;
   }
 
-  if (chunks.length === 0) {
-    throw new Error("Gemini SSE response did not contain JSON chunks");
-  }
-
-  const errorChunk = chunks.find((chunk) => chunk?.error);
-  if (errorChunk?.error) {
-    throw new Error(`Gemini SSE error: ${JSON.stringify(errorChunk.error)}`);
-  }
-
-  return mergeGeminiStreamChunks(chunks);
-}
-
-/// Merge SSE chunks, preserving text, functionCall parts, and grounding.
-function mergeGeminiStreamChunks(chunks: any[]): any {
-  const merged: any = { candidates: [] };
-
-  for (const chunk of chunks) {
-    const candidates = Array.isArray(chunk?.candidates) ? chunk.candidates : [];
-    for (const candidate of candidates) {
-      const index = typeof candidate?.index === "number" ? candidate.index : 0;
-      const target = merged.candidates[index] ?? {
-        index,
-        content: { role: "model", parts: [] },
-        _text: "",
-      };
-
-      const parts = Array.isArray(candidate?.content?.parts)
-        ? candidate.content.parts
-        : [];
-      for (const part of parts) {
-        if (part?.thought === true) continue;
-        if (part?.functionCall) {
-          target.content.parts.push({ functionCall: part.functionCall });
-        } else if (typeof part?.text === "string") {
-          target._text = appendStreamText(target._text, part.text);
-        }
-      }
-
-      if (candidate?.groundingMetadata) {
-        target.groundingMetadata = candidate.groundingMetadata;
-      }
-      if (candidate?.finishReason) {
-        target.finishReason = candidate.finishReason;
-      }
-
-      merged.candidates[index] = target;
-    }
-  }
-
-  merged.candidates = merged.candidates.filter(Boolean);
-  for (const candidate of merged.candidates) {
-    if (candidate._text) {
-      candidate.content.parts.push({ text: candidate._text });
-    }
-    delete candidate._text;
-  }
-
-  return merged;
-}
-
-function appendStreamText(current: string, incoming: string): string {
-  if (!incoming) return current;
-  if (!current) return incoming;
-  if (incoming.startsWith(current)) return incoming;
-  if (current.startsWith(incoming) || current.endsWith(incoming)) return current;
-
-  const maxOverlap = Math.min(current.length, incoming.length);
-  for (let length = maxOverlap; length > 0; length -= 1) {
-    if (current.endsWith(incoming.slice(0, length))) {
-      return current + incoming.slice(length);
-    }
-  }
-
-  return current + incoming;
-}
-
-function shouldTryNextGeminiEndpoint(status: number, body: string): boolean {
-  if (status === 429 || status >= 500) return true;
-  return (status === 400 && body.includes("not supported")) ||
-    (status === 403 && body.includes("1010"));
+  throw new Error("GPT API returned an empty message");
 }
 
 // ---------------------------------------------------------------------------
@@ -740,13 +601,6 @@ function getRequiredEnv(name: string): string {
   const value = Deno.env.get(name);
   if (value) return value;
   throw new Error(`Missing required env var: ${name}`);
-}
-
-function parseList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function uniqueList(values: string[]): string[] {

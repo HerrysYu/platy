@@ -32,11 +32,32 @@ struct DishDetail: Codable {
 
 private struct DishDetailRequest: Codable {
     let dish: String
+    let originalDish: String?
+    let category: String?
+    let menuContext: String?
     let target: String
     let stream: Bool?
 
-    init(dish: String, target: String, stream: Bool? = nil) {
+    enum CodingKeys: String, CodingKey {
+        case dish
+        case originalDish = "original_dish"
+        case category
+        case menuContext = "menu_context"
+        case target, stream
+    }
+
+    init(
+        dish: String,
+        originalDish: String? = nil,
+        category: String? = nil,
+        menuContext: String? = nil,
+        target: String,
+        stream: Bool? = nil
+    ) {
         self.dish = dish
+        self.originalDish = originalDish
+        self.category = category
+        self.menuContext = menuContext
         self.target = target
         self.stream = stream
     }
@@ -89,7 +110,12 @@ final class DishService {
     }
 
     /// Fetch dish images using the original menu text, never the translated display name.
-    func getDishImages(originalName: String, limit: Int = 6) async throws -> [DishMedia] {
+    func getDishImages(
+        originalName: String,
+        categoryOriginal: String? = nil,
+        menuTitleOriginal: String? = nil,
+        limit: Int = 6
+    ) async throws -> [DishMedia] {
         guard let authHeader = authService.getAuthHeader() else {
             throw TranslationError.authenticationRequired
         }
@@ -98,12 +124,19 @@ final class DishService {
             url: PlatyConfig.functionURL(Self.imageFunctionSlug),
             resolvingAgainstBaseURL: false
         )
-        components?.queryItems = [
+        var queryItems = [
             URLQueryItem(name: "original_name", value: originalName),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "hl", value: "zh-cn"),
             URLQueryItem(name: "gl", value: "cn")
         ]
+        if let category = Self.cleanString(categoryOriginal) {
+            queryItems.append(URLQueryItem(name: "category", value: category))
+        }
+        if let menuContext = Self.cleanString(menuTitleOriginal) {
+            queryItems.append(URLQueryItem(name: "menu_context", value: menuContext))
+        }
+        components?.queryItems = queryItems
 
         guard let url = components?.url else {
             throw TranslationError.networkError("Invalid image search URL")
@@ -156,7 +189,14 @@ final class DishService {
     }
 
     /// Fetch dish detail by name and language.
-    func getDishDetail(dishName: String, language: String, completion: @escaping (Result<DishDetail, Error>) -> Void) {
+    func getDishDetail(
+        dishName: String,
+        originalDishName: String? = nil,
+        categoryOriginal: String? = nil,
+        menuTitleOriginal: String? = nil,
+        language: String,
+        completion: @escaping (Result<DishDetail, Error>) -> Void
+    ) {
         guard let authHeader = authService.getAuthHeader() else {
             completion(.failure(TranslationError.authenticationRequired))
             return
@@ -171,7 +211,15 @@ final class DishService {
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
 
         do {
-            request.httpBody = try JSONEncoder().encode(DishDetailRequest(dish: dishName, target: languageName(for: language)))
+            request.httpBody = try JSONEncoder().encode(
+                DishDetailRequest(
+                    dish: dishName,
+                    originalDish: originalDishName,
+                    category: categoryOriginal,
+                    menuContext: menuTitleOriginal,
+                    target: languageName(for: language)
+                )
+            )
         } catch {
             completion(.failure(error))
             return
@@ -209,6 +257,9 @@ final class DishService {
     /// Stream dish detail text as the cloud function generates it, then return the final detail payload.
     func streamDishDetail(
         dishName: String,
+        originalDishName: String? = nil,
+        categoryOriginal: String? = nil,
+        menuTitleOriginal: String? = nil,
         language: String,
         onTitle: @escaping (String) async -> Void,
         onDelta: @escaping (String) async -> Void,
@@ -228,6 +279,9 @@ final class DishService {
         request.httpBody = try JSONEncoder().encode(
             DishDetailRequest(
                 dish: dishName,
+                originalDish: originalDishName,
+                category: categoryOriginal,
+                menuContext: menuTitleOriginal,
                 target: languageName(for: language),
                 stream: true
             )
