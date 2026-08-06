@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const GEMINI_BASE_URL = Deno.env.get("GOOGLE_GEMINI_BASE_URL") ??
   "https://api.cubence.com";
@@ -274,7 +275,7 @@ function parseMenuFilterResult(
     }
 
     const filteredOriginal = typeof item.filteredOriginal === "string"
-      ? item.filteredOriginal.trim()
+      ? cleanMenuName(item.filteredOriginal)
       : "";
     if (
       !filteredOriginal ||

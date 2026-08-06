@@ -370,21 +370,24 @@ final class TranslationService: ObservableObject {
                         return nil
                     }
 
-                    let translatedText = translated.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let translatedText = DishNameSanitizer.clean(translated.text)
                     guard !translatedText.isEmpty else {
                         return nil
                     }
 
-                    let filteredOriginal = translated.filteredOriginal?
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let filteredOriginal = DishNameSanitizer.cleanOptional(
+                        translated.filteredOriginal
+                    )
                     if translated.isDishName == true, filteredOriginal?.isEmpty != false {
                         return nil
                     }
                     let originalText = filteredOriginal ?? result.text
-                    let categoryOriginal = translated.categoryOriginal?
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    let menuTitleOriginal = translated.menuTitleOriginal?
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    let categoryOriginal = DishNameSanitizer.cleanOptional(
+                        translated.categoryOriginal
+                    )
+                    let menuTitleOriginal = DishNameSanitizer.cleanOptional(
+                        translated.menuTitleOriginal
+                    )
 
                     // DeepL's own language detection is the safety net for
                     // same-language text the local detector missed.

@@ -88,7 +88,7 @@ private struct OCRImageOverlayCore: View {
                             let transformedPosition = item.position
 
                             let displayText = (block.translatedText?.isEmpty == false ? block.translatedText! : block.text)
-                            let cleanedDisplayText = displayText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let cleanedDisplayText = DishNameSanitizer.clean(displayText)
 
                             RotatedTextBox(
                                 text: cleanedDisplayText,
@@ -97,14 +97,15 @@ private struct OCRImageOverlayCore: View {
                                 width: transformedPosition.width,
                                 scale: viewModel.scale,
                                 onSelect: { translated in
-                                    let cleanedTranslated = translated.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let cleanedTranslated = DishNameSanitizer.clean(translated)
+                                    let cleanedOriginal = DishNameSanitizer.clean(block.text)
                                     guard !cleanedTranslated.isEmpty else { return }
                                     let fallbackContext = block.categoryOriginal == nil && block.menuTitleOriginal == nil
                                         ? nearbyMenuContext(for: index)
                                         : nil
                                     selectedDish = SelectedDish(
                                         translated: cleanedTranslated,
-                                        original: block.text,
+                                        original: cleanedOriginal,
                                         categoryOriginal: block.categoryOriginal,
                                         menuTitleOriginal: block.menuTitleOriginal ?? fallbackContext
                                     )
@@ -146,7 +147,7 @@ private struct OCRImageOverlayCore: View {
             let block = blocks[index]
             let position = viewModel.calculateTransformedTextPosition(for: block, layout: layout, containerSize: containerSize)
             let displayText = (block.translatedText?.isEmpty == false ? block.translatedText! : block.text)
-            let cleanedDisplayText = displayText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let cleanedDisplayText = DishNameSanitizer.clean(displayText)
 
             guard shouldRenderLabel(text: cleanedDisplayText, position: position, containerSize: containerSize) else {
                 continue
@@ -205,7 +206,7 @@ private struct OCRImageOverlayCore: View {
             let candidate = blocks[index]
             guard candidate.box2D.count >= 4 else { return nil }
 
-            let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = DishNameSanitizer.clean(candidate.text)
             guard !text.isEmpty, text.count <= 40 else { return nil }
 
             let candidateMinX = candidate.box2D[1]

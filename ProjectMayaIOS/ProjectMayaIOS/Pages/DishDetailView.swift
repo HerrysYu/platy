@@ -22,13 +22,15 @@ struct DishDetailView: View {
         menuTitleOriginal: String? = nil,
         authService: AuthService
     ) {
-        self.originalName = originalName
+        let cleanedTranslatedName = DishNameSanitizer.clean(translatedName)
+        let cleanedOriginalName = DishNameSanitizer.clean(originalName)
+        self.originalName = cleanedOriginalName
         _viewModel = StateObject(
             wrappedValue: DishDetailViewModel(
-                dishName: translatedName,
-                originalDishName: originalName,
-                categoryOriginal: categoryOriginal,
-                menuTitleOriginal: menuTitleOriginal,
+                dishName: cleanedTranslatedName,
+                originalDishName: cleanedOriginalName,
+                categoryOriginal: DishNameSanitizer.cleanOptional(categoryOriginal),
+                menuTitleOriginal: DishNameSanitizer.cleanOptional(menuTitleOriginal),
                 authService: authService
             )
         )

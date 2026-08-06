@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 const MAX_ORIGINAL_NAME_LENGTH = 200;
@@ -82,7 +83,8 @@ function cleanSearchTerm(
   value: unknown,
   maxLength: number,
 ): string | undefined {
-  const clean = cleanString(value)?.replace(/\s+/g, " ");
+  const normalized = cleanString(value)?.replace(/\s+/g, " ");
+  const clean = normalized ? cleanMenuName(normalized) : undefined;
   return clean?.slice(0, maxLength);
 }
 

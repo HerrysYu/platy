@@ -54,10 +54,10 @@ private struct DishDetailRequest: Codable {
         target: String,
         stream: Bool? = nil
     ) {
-        self.dish = dish
-        self.originalDish = originalDish
-        self.category = category
-        self.menuContext = menuContext
+        self.dish = DishNameSanitizer.clean(dish)
+        self.originalDish = DishNameSanitizer.cleanOptional(originalDish)
+        self.category = DishNameSanitizer.cleanOptional(category)
+        self.menuContext = DishNameSanitizer.cleanOptional(menuContext)
         self.target = target
         self.stream = stream
     }
@@ -126,17 +126,18 @@ final class DishService {
             url: PlatyConfig.functionURL(Self.imageFunctionSlug),
             resolvingAgainstBaseURL: false
         )
+        let cleanedOriginalName = DishNameSanitizer.clean(originalName)
         var queryItems = [
-            URLQueryItem(name: "original_name", value: originalName),
+            URLQueryItem(name: "original_name", value: cleanedOriginalName),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "hl", value: "zh-cn"),
             URLQueryItem(name: "gl", value: "cn"),
             URLQueryItem(name: "search_version", value: Self.imageSearchVersion)
         ]
-        if let category = Self.cleanString(categoryOriginal) {
+        if let category = DishNameSanitizer.cleanOptional(categoryOriginal) {
             queryItems.append(URLQueryItem(name: "category", value: category))
         }
-        if let menuContext = Self.cleanString(menuTitleOriginal) {
+        if let menuContext = DishNameSanitizer.cleanOptional(menuTitleOriginal) {
             queryItems.append(URLQueryItem(name: "menu_context", value: menuContext))
         }
         components?.queryItems = queryItems

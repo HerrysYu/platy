@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { cleanMenuName } from "./menu_name.ts";
 
 export type DishDetailGeminiConfig = {
   functionName: string;
@@ -85,7 +86,7 @@ async function handleDishDetailRequest(
     }
 
     const body = await readJson(req);
-    const dish = typeof body?.dish === "string" ? body.dish.trim() : "";
+    const dish = cleanRequestText(body?.dish, 200) ?? "";
     const target = typeof body?.target === "string" && body.target.trim()
       ? body.target.trim()
       : "English";
@@ -179,7 +180,7 @@ function cleanRequestText(
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return clean ? clean.slice(0, maxLength).trim() : undefined;
+  return clean ? cleanMenuName(clean.slice(0, maxLength).trim()) : undefined;
 }
 
 function firstCleanRequestText(
