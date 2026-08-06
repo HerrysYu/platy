@@ -99,11 +99,14 @@ private struct OCRImageOverlayCore: View {
                                 onSelect: { translated in
                                     let cleanedTranslated = translated.trimmingCharacters(in: .whitespacesAndNewlines)
                                     guard !cleanedTranslated.isEmpty else { return }
+                                    let fallbackContext = block.categoryOriginal == nil && block.menuTitleOriginal == nil
+                                        ? nearbyMenuContext(for: index)
+                                        : nil
                                     selectedDish = SelectedDish(
                                         translated: cleanedTranslated,
                                         original: block.text,
                                         categoryOriginal: block.categoryOriginal,
-                                        menuTitleOriginal: block.menuTitleOriginal
+                                        menuTitleOriginal: block.menuTitleOriginal ?? fallbackContext
                                     )
                                 }
                             )
@@ -181,6 +184,55 @@ private struct OCRImageOverlayCore: View {
             !punctuation.contains(scalar)
         }
         return meaningful
+    }
+
+    /// Older saved menus do not contain explicit category metadata. In that
+    /// case, nearby original names from the same visual column provide useful
+    /// food context without another network or model request.
+    private func nearbyMenuContext(for selectedIndex: Int) -> String? {
+        guard blocks.indices.contains(selectedIndex) else { return nil }
+        let selected = blocks[selectedIndex]
+        guard selected.box2D.count >= 4 else { return nil }
+
+        let selectedMinX = selected.box2D[1]
+        let selectedMaxX = selected.box2D[3]
+        let selectedCenterY = (selected.box2D[0] + selected.box2D[2]) / 2
+        let selectedWidth = max(selectedMaxX - selectedMinX, 1)
+        let maximumVerticalDistance = max(originalHeight * 0.24, 120)
+
+        let nearby = blocks.indices.compactMap { index -> (distance: CGFloat, text: String)? in
+            guard index != selectedIndex else { return nil }
+            let candidate = blocks[index]
+            guard candidate.box2D.count >= 4 else { return nil }
+
+            let text = candidate.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, text.count <= 40 else { return nil }
+
+            let candidateMinX = candidate.box2D[1]
+            let candidateMaxX = candidate.box2D[3]
+            let candidateWidth = max(candidateMaxX - candidateMinX, 1)
+            let overlap = max(0, min(selectedMaxX, candidateMaxX) - max(selectedMinX, candidateMinX))
+            let overlapRatio = overlap / min(selectedWidth, candidateWidth)
+            guard overlapRatio >= 0.3 else { return nil }
+
+            let candidateCenterY = (candidate.box2D[0] + candidate.box2D[2]) / 2
+            let verticalDistance = abs(candidateCenterY - selectedCenterY)
+            guard verticalDistance <= maximumVerticalDistance else { return nil }
+
+            return (verticalDistance, text)
+        }
+        .sorted { $0.distance < $1.distance }
+
+        var seen = Set<String>()
+        let names = nearby.compactMap { item -> String? in
+            let key = item.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            guard seen.insert(key).inserted else { return nil }
+            return item.text
+        }
+        .prefix(4)
+
+        let context = names.joined(separator: "、")
+        return context.isEmpty ? nil : context
     }
 }
 

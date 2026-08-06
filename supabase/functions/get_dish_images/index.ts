@@ -4,6 +4,23 @@ const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 const MAX_ORIGINAL_NAME_LENGTH = 200;
 const MAX_CONTEXT_LENGTH = 160;
 const MAX_SEARCH_QUERY_LENGTH = 400;
+const FOOD_INTENT_TERMS = ["菜品", "美食"];
+const NON_FOOD_EXCLUSIONS = [
+  "甲沟炎",
+  "灰指甲",
+  "趾甲",
+  "皮肤病",
+  "医疗",
+  "医院",
+  "疾病",
+  "手术",
+  "治疗",
+  "人体",
+];
+const NON_FOOD_RESULT_PATTERNS = [
+  /甲沟炎|灰指甲|趾甲|皮肤病|皮肤科|医疗|医院|疾病|手术|治疗|感染|患者|病例|病症/iu,
+  /\b(?:ingrown\s+toenail|toenail|podiatr(?:y|ic|ist)?|dermatolog(?:y|ist)?|medical|clinic|hospital|surgery|infection|disease|patient|treatment)\b/iu,
+];
 
 type SerpApiImageResult = {
   position?: number;
@@ -77,7 +94,10 @@ function buildSearchQuery(
   const seen = new Set<string>();
   const parts: string[] = [];
 
-  for (const value of [originalName, category, menuContext]) {
+  // Put semantic food context before the ambiguous name so image search does
+  // not anchor on a literal body-part interpretation. The original menu text
+  // remains an exact phrase and the translated display name is never used.
+  for (const value of [category, menuContext]) {
     if (!value) continue;
 
     const dedupeKey = value.normalize("NFKC").toLowerCase();
@@ -87,7 +107,36 @@ function buildSearchQuery(
     parts.push(value);
   }
 
-  return parts.join(" ").slice(0, MAX_SEARCH_QUERY_LENGTH).trim();
+  const requiredParts = [
+    quoteSearchPhrase(originalName),
+    ...FOOD_INTENT_TERMS,
+    ...NON_FOOD_EXCLUSIONS.map((term) => `-${term}`),
+  ];
+  const requiredQuery = requiredParts.join(" ");
+  const contextBudget = Math.max(
+    0,
+    MAX_SEARCH_QUERY_LENGTH - requiredQuery.length - 1,
+  );
+  const contextQuery = parts.join(" ").slice(0, contextBudget).trim();
+
+  return [contextQuery, requiredQuery].filter(Boolean).join(" ");
+}
+
+function quoteSearchPhrase(value: string): string {
+  const clean = value
+    .replace(/["“”]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean ? `"${clean}"` : value;
+}
+
+function isLikelyNonFoodResult(item: SerpApiImageResult): boolean {
+  const searchable = [item.title, item.source, item.link, item.original]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .normalize("NFKC");
+
+  return NON_FOOD_RESULT_PATTERNS.some((pattern) => pattern.test(searchable));
 }
 
 function getRequiredEnv(name: string): string {
@@ -164,6 +213,8 @@ async function serpApiImageSearch(
   const results: DishImageResult[] = [];
 
   for (const item of rawResults) {
+    if (isLikelyNonFoodResult(item)) continue;
+
     const fullUrl = isHttpUrl(item.original)
       ? item.original
       : isHttpUrl(item.thumbnail)

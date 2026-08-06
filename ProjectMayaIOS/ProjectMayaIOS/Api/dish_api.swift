@@ -85,6 +85,7 @@ private struct DishDetailSSEvent {
 }
 
 private struct DishImagesResponse: Codable {
+    let query: String?
     let results: [DishImageSearchResult]
 }
 
@@ -100,6 +101,7 @@ private struct DishImageSearchResult: Codable {
 final class DishService {
     private static let functionSlug = "dish_detail_new"
     private static let imageFunctionSlug = "get_dish_images"
+    private static let imageSearchVersion = "2"
 
     private let authService: AuthService
     private let session: URLSession
@@ -128,7 +130,8 @@ final class DishService {
             URLQueryItem(name: "original_name", value: originalName),
             URLQueryItem(name: "limit", value: String(limit)),
             URLQueryItem(name: "hl", value: "zh-cn"),
-            URLQueryItem(name: "gl", value: "cn")
+            URLQueryItem(name: "gl", value: "cn"),
+            URLQueryItem(name: "search_version", value: Self.imageSearchVersion)
         ]
         if let category = Self.cleanString(categoryOriginal) {
             queryItems.append(URLQueryItem(name: "category", value: category))
@@ -161,6 +164,11 @@ final class DishService {
         }
 
         let decoded = try JSONDecoder().decode(DishImagesResponse.self, from: data)
+#if DEBUG
+        if let query = decoded.query {
+            print("Dish image search query: \(query)")
+        }
+#endif
         var seen = Set<String>()
 
         return decoded.results.compactMap { item in
