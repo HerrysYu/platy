@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { buildDishImageSearchQuery } from "../_shared/dish_image_query.ts";
+import { decideDishNameAmbiguity } from "../_shared/dish_name_ambiguity.ts";
 import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
@@ -19,6 +20,11 @@ type SerpApiImageResult = {
   original?: string;
   original_width?: number;
   original_height?: number;
+};
+
+type SerpApiResponse = {
+  error?: unknown;
+  images_results?: unknown;
 };
 
 type DishImageResult = {
@@ -138,20 +144,20 @@ async function serpApiImageSearch(
     );
   }
 
-  let data: any;
+  let data: SerpApiResponse;
   try {
-    data = JSON.parse(body);
+    data = JSON.parse(body) as SerpApiResponse;
   } catch {
     throw new Error(
       `SerpApi returned non-JSON response: ${body.slice(0, 300)}`,
     );
   }
 
-  if (typeof data?.error === "string" && data.error.trim()) {
+  if (typeof data.error === "string" && data.error.trim()) {
     throw new Error(`SerpApi image search failed: ${data.error.trim()}`);
   }
 
-  const rawResults = Array.isArray(data?.images_results)
+  const rawResults = Array.isArray(data.images_results)
     ? data.images_results as SerpApiImageResult[]
     : [];
   const seen = new Set<string>();
@@ -242,8 +248,14 @@ serve(async (req) => {
       );
     }
 
+    const ambiguity = await decideDishNameAmbiguity(
+      originalName,
+      category,
+      menuContext,
+    );
     const query = buildDishImageSearchQuery(
       originalName,
+      ambiguity.needsContext,
       category,
       menuContext,
     );
@@ -254,11 +266,17 @@ serve(async (req) => {
         query,
         provider: "serpapi",
         engine: "google_images",
+        ambiguity: {
+          needs_context: ambiguity.needsContext,
+          source: ambiguity.source,
+        },
         count: results.length,
         results,
       },
       200,
-      cors,
+      ambiguity.source === "fallback"
+        ? { ...cors, "cache-control": "no-store" }
+        : cors,
     );
   } catch (err) {
     return json(

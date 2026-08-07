@@ -13,6 +13,21 @@ const NON_FOOD_EXCLUSIONS = [
   "治疗",
   "人体",
 ];
+const GENERIC_CATEGORY_KEYS = new Set([
+  "招牌",
+  "招牌菜",
+  "招牌推荐",
+  "推荐",
+  "推荐菜",
+  "新品",
+  "新品推荐",
+  "特色",
+  "特色菜",
+  "必点",
+  "热销",
+  "人气",
+  "主厨推荐",
+]);
 
 function cleanQueryFragment(
   value: string | undefined,
@@ -35,25 +50,17 @@ function dedupeKey(value: string): string {
   return value.normalize("NFKC").toLowerCase();
 }
 
-function appendWithinBudget(
-  current: string,
-  value: string,
-  budget: number,
-): string {
-  const available = budget - current.length - (current ? 1 : 0);
-  if (available <= 0) return current;
-
-  const addition = value.slice(0, available).trim();
-  return addition ? [current, addition].filter(Boolean).join(" ") : current;
+function isGenericCategory(value: string | undefined): boolean {
+  return value ? GENERIC_CATEGORY_KEYS.has(dedupeKey(value)) : false;
 }
 
 /**
- * Builds a dish-first Google Images query. The strongest category context is
- * attached directly to the dish as `dish（category）`; menu context remains a
- * weaker trailing hint because old records may derive it from nearby dishes.
+ * Builds a dish-first Google Images query. Context is attached as
+ * `dish（category）` only when the ambiguity classifier says it is needed.
  */
 export function buildDishImageSearchQuery(
   originalName: string,
+  needsContext: boolean,
   category?: string,
   menuContext?: string,
 ): string {
@@ -61,18 +68,11 @@ export function buildDishImageSearchQuery(
   const cleanCategory = cleanQueryFragment(category, true);
   const cleanMenuContext = cleanQueryFragment(menuContext, true);
   const dishKey = dedupeKey(dish);
-  const categoryKey = cleanCategory ? dedupeKey(cleanCategory) : undefined;
-
-  const usableCategory = cleanCategory && categoryKey !== dishKey
-    ? cleanCategory
-    : undefined;
-  const menuContextKey = cleanMenuContext
-    ? dedupeKey(cleanMenuContext)
-    : undefined;
-  const usableMenuContext = cleanMenuContext &&
-      menuContextKey !== dishKey &&
-      menuContextKey !== categoryKey
-    ? cleanMenuContext
+  const contextCandidates = isGenericCategory(cleanCategory)
+    ? [cleanMenuContext, cleanCategory]
+    : [cleanCategory, cleanMenuContext];
+  const disambiguationContext = needsContext
+    ? contextCandidates.find((value) => value && dedupeKey(value) !== dishKey)
     : undefined;
 
   const requiredSuffix = [
@@ -85,20 +85,13 @@ export function buildDishImageSearchQuery(
   );
 
   let contextualQuery = dish.slice(0, contextualBudget).trim();
-  if (usableCategory) {
+  if (disambiguationContext) {
     const categoryBudget = contextualBudget - contextualQuery.length - 2;
     if (categoryBudget > 0) {
-      const categoryText = usableCategory.slice(0, categoryBudget).trim();
+      const categoryText = disambiguationContext.slice(0, categoryBudget)
+        .trim();
       if (categoryText) contextualQuery += `（${categoryText}）`;
     }
-  }
-
-  if (usableMenuContext) {
-    contextualQuery = appendWithinBudget(
-      contextualQuery,
-      usableMenuContext,
-      contextualBudget,
-    );
   }
 
   return [contextualQuery, requiredSuffix].filter(Boolean).join(" ");
