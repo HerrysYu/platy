@@ -8,6 +8,7 @@ class DishDetailViewModel: ObservableObject {
     @Published var streamingTitle: String?
     @Published var streamingDescription: String = ""
     @Published var streamingMedia: [DishMedia] = []
+    @Published var isDeepSearchingImages: Bool = false
     @Published var errorMessage: String?
     /// Per-dish advisory based on the user's saved preferences.
     @Published var advice: DishAdvice?
@@ -22,6 +23,7 @@ class DishDetailViewModel: ObservableObject {
     private let menuTitleOriginal: String?
     private var loadTask: Task<Void, Never>?
     private var imageTask: Task<Void, Never>?
+    private var imageSearchGeneration = UUID()
     private var adviceTask: Task<Void, Never>?
 
     init(
@@ -59,8 +61,11 @@ class DishDetailViewModel: ObservableObject {
         streamingTitle = nil
         streamingDescription = ""
         streamingMedia = []
+        isDeepSearchingImages = false
         errorMessage = nil
         advice = nil
+        let imageGeneration = UUID()
+        imageSearchGeneration = imageGeneration
 
         let authToken = authService.getAuthToken()
         let userID = authService.currentUserID
@@ -94,26 +99,70 @@ class DishDetailViewModel: ObservableObject {
             }
         }
 
+        let imageService = service
+        let imageOriginalName = originalDishName
+        let imageCategory = categoryOriginal
+        let imageMenuContext = menuTitleOriginal
         imageTask = Task { [weak self] in
-            guard let self else { return }
-
             do {
-                let media = try await self.service.getDishImages(
-                    originalName: self.originalDishName,
-                    categoryOriginal: self.categoryOriginal,
-                    menuTitleOriginal: self.menuTitleOriginal
+                let probe = try await imageService.getDishImages(
+                    originalName: imageOriginalName,
+                    categoryOriginal: imageCategory,
+                    menuTitleOriginal: imageMenuContext
                 )
-                guard !Task.isCancelled, !media.isEmpty else { return }
+                try Task.checkCancellation()
+
+                let finalOutcome: DishImageSearchOutcome
+                if probe.needsDeepSearch {
+                    // A review-triggered response must include Gemini's
+                    // qualifier. Never publish the probe images if a malformed
+                    // response omits it.
+                    guard let deepSearchTerm = probe.deepSearchTerm else {
+                        return
+                    }
+                    let canContinue = await MainActor.run { [weak self] in
+                        guard let self,
+                              self.imageSearchGeneration == imageGeneration
+                        else { return false }
+                        withAnimation(PlatyMotion.ease) {
+                            self.isDeepSearchingImages = true
+                        }
+                        return true
+                    }
+                    guard canContinue else { return }
+
+                    finalOutcome = try await imageService.getDishImages(
+                        originalName: imageOriginalName,
+                        categoryOriginal: imageCategory,
+                        menuTitleOriginal: imageMenuContext,
+                        deepSearchTerm: deepSearchTerm
+                    )
+                    try Task.checkCancellation()
+                } else {
+                    finalOutcome = probe
+                }
 
                 await MainActor.run {
-                    self.streamingMedia = media
+                    guard let self,
+                          self.imageSearchGeneration == imageGeneration
+                    else { return }
+                    self.isDeepSearchingImages = false
+                    guard !finalOutcome.media.isEmpty else { return }
+                    self.streamingMedia = finalOutcome.media
                     if let detail = self.detail, detail.media.isEmpty {
-                        self.detail = detail.replacingMedia(media)
+                        self.detail = detail.replacingMedia(finalOutcome.media)
                     }
                 }
             } catch is CancellationError {
                 return
             } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard let self,
+                          self.imageSearchGeneration == imageGeneration
+                    else { return }
+                    self.isDeepSearchingImages = false
+                }
                 print("Dish image error: \(error)")
             }
         }
@@ -186,5 +235,12 @@ class DishDetailViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    func cancelImageSearch() {
+        imageTask?.cancel()
+        imageTask = nil
+        imageSearchGeneration = UUID()
+        isDeepSearchingImages = false
     }
 }

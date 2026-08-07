@@ -1,33 +1,14 @@
-const MAX_SEARCH_QUERY_LENGTH = 400;
+import { cleanMenuName } from "./menu_name.ts";
 
-const FOOD_INTENT_TERMS = ["菜品", "美食"];
-const NON_FOOD_EXCLUSIONS = [
-  "甲沟炎",
-  "灰指甲",
-  "趾甲",
-  "皮肤病",
-  "医疗",
-  "医院",
-  "疾病",
-  "手术",
-  "治疗",
-  "人体",
-];
-const GENERIC_CATEGORY_KEYS = new Set([
-  "招牌",
-  "招牌菜",
-  "招牌推荐",
-  "推荐",
-  "推荐菜",
-  "新品",
-  "新品推荐",
-  "特色",
-  "特色菜",
-  "必点",
-  "热销",
-  "人气",
-  "主厨推荐",
-]);
+const MAX_SEARCH_QUERY_LENGTH = 400;
+const MAX_QUALIFIER_LENGTH = 80;
+
+function replaceControlCharacters(value: string): string {
+  return Array.from(value).map((character) => {
+    const code = character.codePointAt(0) ?? 0;
+    return code <= 0x1f || code === 0x7f ? " " : character;
+  }).join("");
+}
 
 function cleanQueryFragment(
   value: string | undefined,
@@ -35,8 +16,7 @@ function cleanQueryFragment(
 ): string | undefined {
   if (!value) return undefined;
 
-  let clean = value
-    .normalize("NFKC")
+  let clean = replaceControlCharacters(value.normalize("NFKC"))
     .replace(/["“”]/g, " ");
   if (removeParentheses) clean = clean.replace(/[()（）]/g, " ");
   clean = clean
@@ -46,53 +26,60 @@ function cleanQueryFragment(
   return clean || undefined;
 }
 
-function dedupeKey(value: string): string {
-  return value.normalize("NFKC").toLowerCase();
-}
-
-function isGenericCategory(value: string | undefined): boolean {
-  return value ? GENERIC_CATEGORY_KEYS.has(dedupeKey(value)) : false;
+/**
+ * The probe search deliberately contains only the cleaned menu text. Visual
+ * review happens after SerpAPI responds, so no category or model-generated
+ * term is allowed to influence this first search.
+ */
+export function buildDishImageProbeQuery(originalName: string): string {
+  return (cleanQueryFragment(originalName) ?? "")
+    .slice(0, MAX_SEARCH_QUERY_LENGTH)
+    .trim();
 }
 
 /**
- * Builds a dish-first Google Images query. Context is attached as
- * `dish（category）` only when the ambiguity classifier says it is needed.
+ * Treats a model/client supplied qualifier as plain text, never as Google
+ * search syntax. This also gives the deep-search endpoint the same validation
+ * as the value returned by Gemini.
  */
-export function buildDishImageSearchQuery(
+export function sanitizeDishImageQualifier(
+  value: string | undefined,
+): string | undefined {
+  let clean = cleanQueryFragment(value, true);
+  if (!clean) return undefined;
+
+  clean = clean
+    .replace(/(?:https?:\/\/|www\.)\S+/giu, " ")
+    .replace(
+      /\b(?:site|filetype|inurl|intitle|allinurl|allintitle|related|cache)\s*:\s*\S*/giu,
+      " ",
+    )
+    .replace(/(^|\s)[+-]\S+/gu, "$1")
+    .replace(/\b(?:OR|AND)\b/giu, " ")
+    .replace(/[*|`#@:：]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  clean = cleanMenuName(clean).slice(0, MAX_QUALIFIER_LENGTH).trim();
+
+  return clean && /\p{L}/u.test(clean) ? clean : undefined;
+}
+
+/** Builds the one allowed follow-up query: `originalName（qualifier）`. */
+export function buildDishImageDeepSearchQuery(
   originalName: string,
-  needsContext: boolean,
-  category?: string,
-  menuContext?: string,
+  qualifier: string,
 ): string {
   const dish = cleanQueryFragment(originalName) ?? "";
-  const cleanCategory = cleanQueryFragment(category, true);
-  const cleanMenuContext = cleanQueryFragment(menuContext, true);
-  const dishKey = dedupeKey(dish);
-  const contextCandidates = isGenericCategory(cleanCategory)
-    ? [cleanMenuContext, cleanCategory]
-    : [cleanCategory, cleanMenuContext];
-  const disambiguationContext = needsContext
-    ? contextCandidates.find((value) => value && dedupeKey(value) !== dishKey)
-    : undefined;
+  const context = sanitizeDishImageQualifier(qualifier) ?? "";
+  if (!context) return dish.slice(0, MAX_SEARCH_QUERY_LENGTH).trim();
 
-  const requiredSuffix = [
-    ...FOOD_INTENT_TERMS,
-    ...NON_FOOD_EXCLUSIONS.map((term) => `-${term}`),
-  ].join(" ");
-  const contextualBudget = Math.max(
+  const dishBudget = Math.max(0, MAX_SEARCH_QUERY_LENGTH - 2);
+  const boundedDish = dish.slice(0, dishBudget).trim();
+  const contextBudget = Math.max(
     0,
-    MAX_SEARCH_QUERY_LENGTH - requiredSuffix.length - 1,
+    MAX_SEARCH_QUERY_LENGTH - boundedDish.length - 2,
   );
+  const boundedContext = context.slice(0, contextBudget).trim();
 
-  let contextualQuery = dish.slice(0, contextualBudget).trim();
-  if (disambiguationContext) {
-    const categoryBudget = contextualBudget - contextualQuery.length - 2;
-    if (categoryBudget > 0) {
-      const categoryText = disambiguationContext.slice(0, categoryBudget)
-        .trim();
-      if (categoryText) contextualQuery += `（${categoryText}）`;
-    }
-  }
-
-  return [contextualQuery, requiredSuffix].filter(Boolean).join(" ");
+  return boundedContext ? `${boundedDish}（${boundedContext}）` : boundedDish;
 }

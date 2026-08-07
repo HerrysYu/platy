@@ -86,7 +86,15 @@ private struct DishDetailSSEvent {
 
 private struct DishImagesResponse: Codable {
     let query: String?
+    let needsDeepSearch: Bool?
+    let deepSearchTerm: String?
     let results: [DishImageSearchResult]
+
+    enum CodingKeys: String, CodingKey {
+        case query, results
+        case needsDeepSearch = "needs_deep_search"
+        case deepSearchTerm = "deep_search_term"
+    }
 }
 
 private struct DishImageSearchResult: Codable {
@@ -97,11 +105,17 @@ private struct DishImageSearchResult: Codable {
     let source: String?
 }
 
+struct DishImageSearchOutcome {
+    let media: [DishMedia]
+    let needsDeepSearch: Bool
+    let deepSearchTerm: String?
+}
+
 // MARK: - Dish Service
 final class DishService {
     private static let functionSlug = "dish_detail_new"
     private static let imageFunctionSlug = "get_dish_images"
-    private static let imageSearchVersion = "4"
+    private static let imageSearchVersion = "5"
 
     private let authService: AuthService
     private let session: URLSession
@@ -116,8 +130,9 @@ final class DishService {
         originalName: String,
         categoryOriginal: String? = nil,
         menuTitleOriginal: String? = nil,
+        deepSearchTerm: String? = nil,
         limit: Int = 6
-    ) async throws -> [DishMedia] {
+    ) async throws -> DishImageSearchOutcome {
         guard let authHeader = authService.getAuthHeader() else {
             throw TranslationError.authenticationRequired
         }
@@ -140,6 +155,10 @@ final class DishService {
         if let menuContext = DishNameSanitizer.cleanOptional(menuTitleOriginal) {
             queryItems.append(URLQueryItem(name: "menu_context", value: menuContext))
         }
+        if let deepSearchTerm = DishNameSanitizer.cleanOptional(deepSearchTerm) {
+            queryItems.append(URLQueryItem(name: "deep_search", value: "true"))
+            queryItems.append(URLQueryItem(name: "deep_search_term", value: deepSearchTerm))
+        }
         components?.queryItems = queryItems
 
         guard let url = components?.url else {
@@ -148,7 +167,7 @@ final class DishService {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.timeoutInterval = 12
+        request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(PlatyConfig.supabasePublishableKey, forHTTPHeaderField: "apikey")
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -172,7 +191,7 @@ final class DishService {
 #endif
         var seen = Set<String>()
 
-        return decoded.results.compactMap { item in
+        let media: [DishMedia] = decoded.results.compactMap { item in
             guard let imageURL = Self.cleanImageURL(item.thumbUrl ?? item.fullUrl),
                   !seen.contains(imageURL)
             else {
@@ -186,6 +205,12 @@ final class DishService {
                 timestamp: ISO8601DateFormatter().string(from: Date())
             )
         }
+
+        return DishImageSearchOutcome(
+            media: media,
+            needsDeepSearch: decoded.needsDeepSearch ?? false,
+            deepSearchTerm: Self.cleanString(decoded.deepSearchTerm)
+        )
     }
 
     private static func cleanImageURL(_ value: String?) -> String? {

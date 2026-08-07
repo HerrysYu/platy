@@ -61,6 +61,9 @@ struct DishDetailView: View {
             }
         }
         .presentationDragIndicator(.visible)
+        .onDisappear {
+            viewModel.cancelImageSearch()
+        }
     }
 
     private var displayedDish: DishDetail? {
@@ -118,6 +121,10 @@ struct DishDetailView: View {
             if let advice = viewModel.advice, advice.hasConcerns {
                 DishAdviceCard(advice: advice)
                     .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            if viewModel.isDeepSearchingImages {
+                deepImageSearchStatus
             }
 
             if !dish.media.isEmpty {
@@ -223,9 +230,24 @@ struct DishDetailView: View {
             Text("Images and descriptions may take a moment.")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(PlatyTheme.textSecondary)
+            if viewModel.isDeepSearchingImages {
+                deepImageSearchStatus
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 100)
+    }
+
+    private var deepImageSearchStatus: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .tint(PlatyTheme.accent)
+                .scaleEffect(0.76)
+            Text("Deep searching for images")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(PlatyTheme.accent)
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     private func errorState(_ message: String) -> some View {

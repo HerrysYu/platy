@@ -1,4 +1,8 @@
-import { buildDishImageSearchQuery } from "./dish_image_query.ts";
+import {
+  buildDishImageDeepSearchQuery,
+  buildDishImageProbeQuery,
+  sanitizeDishImageQualifier,
+} from "./dish_image_query.ts";
 
 function assertEquals(actual: string, expected: string): void {
   if (actual !== expected) {
@@ -8,73 +12,65 @@ function assertEquals(actual: string, expected: string): void {
   }
 }
 
-Deno.test("adds category in parentheses only for an ambiguous dish", () => {
-  const query = buildDishImageSearchQuery(
-    "脚趾肉",
-    true,
+Deno.test("probe query uses only the original menu name", () => {
+  assertEquals(buildDishImageProbeQuery("脚趾肉"), "脚趾肉");
+  assertEquals(buildDishImageProbeQuery("  金针菇  "), "金针菇");
+});
+
+Deno.test("probe query does not append food or exclusion terms", () => {
+  const query = buildDishImageProbeQuery("脚趾肉");
+  for (const forbidden of ["鲜切牛肉", "菜品", "美食", "-甲沟炎"]) {
+    if (query.includes(forbidden)) {
+      throw new Error(`Probe query unexpectedly contains ${forbidden}`);
+    }
+  }
+});
+
+Deno.test("deep query appends only the Gemini qualifier in parentheses", () => {
+  assertEquals(
+    buildDishImageDeepSearchQuery("脚趾肉", "鲜切牛肉"),
+    "脚趾肉（鲜切牛肉）",
+  );
+});
+
+Deno.test("deep query strips nested parentheses from the qualifier", () => {
+  assertEquals(
+    buildDishImageDeepSearchQuery("脚趾肉", "（潮汕）鲜切牛肉"),
+    "脚趾肉（潮汕 鲜切牛肉）",
+  );
+});
+
+Deno.test("deep qualifier is plain text rather than search syntax", () => {
+  assertEquals(
+    sanitizeDishImageQualifier(
+      "site:evil.example 鲜切牛肉 OR filetype:html -甲沟炎 https://evil.example",
+    ) ?? "",
     "鲜切牛肉",
-    "潮汕牛肉火锅",
   );
-
-  if (!query.startsWith("脚趾肉（鲜切牛肉） 菜品 美食")) {
-    throw new Error(`Unexpected query order: ${query}`);
-  }
+  assertEquals(
+    buildDishImageDeepSearchQuery("脚趾肉", "site:evil.example 鲜切牛肉"),
+    "脚趾肉（鲜切牛肉）",
+  );
 });
 
-Deno.test("does not add context for an unambiguous dish", () => {
-  const query = buildDishImageSearchQuery(
-    "金针菇",
-    false,
-    "菌菇类",
-    "潮汕牛肉火锅",
-  );
-
-  if (!query.startsWith("金针菇 菜品 美食") || query.includes("菌菇类")) {
-    throw new Error(`Unexpected clear-name query: ${query}`);
-  }
-});
-
-Deno.test("uses menu context in parentheses when category is absent", () => {
-  const query = buildDishImageSearchQuery(
-    "脚趾肉",
-    true,
-    undefined,
-    "潮汕牛肉火锅",
-  );
-
-  if (!query.startsWith("脚趾肉（潮汕牛肉火锅） 菜品 美食")) {
-    throw new Error(`Unexpected menu-context query: ${query}`);
-  }
-});
-
-Deno.test("prefers menu context over a generic category", () => {
-  const query = buildDishImageSearchQuery(
-    "吊龙",
-    true,
-    "招牌推荐",
-    "潮汕牛肉火锅",
-  );
-
-  if (!query.startsWith("吊龙（潮汕牛肉火锅） 菜品 美食")) {
-    throw new Error(`Unexpected generic-category query: ${query}`);
-  }
-});
-
-Deno.test("keeps the query within the configured limit", () => {
-  const query = buildDishImageSearchQuery(
+Deno.test("queries stay within the configured limit", () => {
+  const probe = buildDishImageProbeQuery("菜".repeat(500));
+  const deep = buildDishImageDeepSearchQuery(
     "菜".repeat(200),
-    true,
-    "分类".repeat(80),
-    "菜单".repeat(80),
+    "分类".repeat(200),
   );
 
-  if (query.length > 400) {
-    throw new Error(`Query is too long: ${query.length}`);
+  if (probe.length > 400 || deep.length > 400) {
+    throw new Error(
+      `Query is too long: probe=${probe.length}, deep=${deep.length}`,
+    );
   }
 });
 
-Deno.test("preserves the simple no-context query behavior", () => {
-  const query = buildDishImageSearchQuery("7-UP", false);
-  const expectedPrefix = "7-UP 菜品 美食";
-  assertEquals(query.slice(0, expectedPrefix.length), expectedPrefix);
+Deno.test("preserves meaningful punctuation in the dish name", () => {
+  assertEquals(buildDishImageProbeQuery("7-UP"), "7-UP");
+  assertEquals(
+    buildDishImageDeepSearchQuery("-18°C冰淇淋", "甜品"),
+    "-18°C冰淇淋（甜品）",
+  );
 });

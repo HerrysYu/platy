@@ -1,15 +1,40 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { buildDishImageSearchQuery } from "../_shared/dish_image_query.ts";
-import { decideDishNameAmbiguity } from "../_shared/dish_name_ambiguity.ts";
+import {
+  buildDishImageDeepSearchQuery,
+  buildDishImageProbeQuery,
+  sanitizeDishImageQualifier,
+} from "../_shared/dish_image_query.ts";
+import {
+  type DishImageVisualReview,
+  filterCandidatesToReviewedThumbnails,
+  normalizeTrustedThumbnailUrl,
+  reviewDishImageCandidates,
+} from "../_shared/dish_image_review.ts";
 import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 const MAX_ORIGINAL_NAME_LENGTH = 200;
 const MAX_CONTEXT_LENGTH = 160;
+const SERPAPI_TIMEOUT_MS = 5000;
 const NON_FOOD_RESULT_PATTERNS = [
   /甲沟炎|灰指甲|趾甲|皮肤病|皮肤科|医疗|医院|疾病|手术|治疗|感染|患者|病例|病症/iu,
   /\b(?:ingrown\s+toenail|toenail|podiatr(?:y|ic|ist)?|dermatolog(?:y|ist)?|medical|clinic|hospital|surgery|infection|disease|patient|treatment)\b/iu,
 ];
+const GENERIC_CATEGORY_KEYS = new Set([
+  "招牌",
+  "招牌菜",
+  "招牌推荐",
+  "推荐",
+  "推荐菜",
+  "新品",
+  "新品推荐",
+  "特色",
+  "特色菜",
+  "必点",
+  "热销",
+  "人气",
+  "主厨推荐",
+]);
 
 type SerpApiImageResult = {
   position?: number;
@@ -117,12 +142,11 @@ async function fetchWithTimeout(
   }
 }
 
-async function serpApiImageSearch(
+async function fetchSerpApiImageCandidates(
   q: string,
-  limit: number,
   hl: string,
   gl: string,
-): Promise<DishImageResult[]> {
+): Promise<SerpApiImageResult[]> {
   const params = new URLSearchParams({
     engine: "google_images",
     q,
@@ -135,6 +159,8 @@ async function serpApiImageSearch(
 
   const res = await fetchWithTimeout(
     `${SERPAPI_ENDPOINT}?${params.toString()}`,
+    {},
+    SERPAPI_TIMEOUT_MS,
   );
   const body = await res.text();
 
@@ -157,25 +183,34 @@ async function serpApiImageSearch(
     throw new Error(`SerpApi image search failed: ${data.error.trim()}`);
   }
 
-  const rawResults = Array.isArray(data.images_results)
-    ? data.images_results as SerpApiImageResult[]
+  return Array.isArray(data.images_results)
+    ? data.images_results.filter((item): item is SerpApiImageResult =>
+      Boolean(item) && typeof item === "object"
+    )
     : [];
+}
+
+function mapClientResults(
+  rawResults: SerpApiImageResult[],
+  q: string,
+  limit: number,
+): DishImageResult[] {
   const seen = new Set<string>();
   const results: DishImageResult[] = [];
 
   for (const item of rawResults) {
     if (isLikelyNonFoodResult(item)) continue;
 
-    const fullUrl = isHttpUrl(item.original)
-      ? item.original
-      : isHttpUrl(item.thumbnail)
-      ? item.thumbnail
-      : undefined;
+    // The app renders thumbUrl first. Requiring a trusted Google/SerpAPI CDN
+    // URL avoids handing AsyncImage a loopback/LAN or arbitrary HTTP target.
+    const thumbUrl = normalizeTrustedThumbnailUrl(item.thumbnail);
+    if (!thumbUrl) continue;
 
-    if (!fullUrl || seen.has(fullUrl)) continue;
+    const fullUrl = isHttpUrl(item.original) ? item.original : thumbUrl;
+
+    if (seen.has(fullUrl)) continue;
     seen.add(fullUrl);
 
-    const thumbUrl = isHttpUrl(item.thumbnail) ? item.thumbnail : undefined;
     const pageUrl = isHttpUrl(item.link) ? item.link : fullUrl;
     const title = cleanString(item.title) ?? cleanString(item.source) ?? q;
 
@@ -198,6 +233,50 @@ async function serpApiImageSearch(
   }
 
   return results;
+}
+
+type SkippedVisualReview = {
+  status: "skipped";
+  reason: "deep_search";
+  reviewedImages: 0;
+};
+
+function skippedVisualReview(): SkippedVisualReview {
+  return { status: "skipped", reason: "deep_search", reviewedImages: 0 };
+}
+
+function fallbackDeepSearchTerm(
+  originalName: string,
+  category?: string,
+  menuContext?: string,
+): string | undefined {
+  const originalKey = originalName.normalize("NFKC").toLowerCase();
+  const cleanCategory = sanitizeDishImageQualifier(category);
+  const cleanMenuContext = sanitizeDishImageQualifier(menuContext);
+  const categoryIsGeneric = cleanCategory
+    ? GENERIC_CATEGORY_KEYS.has(
+      cleanCategory.normalize("NFKC").toLowerCase(),
+    )
+    : false;
+  const candidates = categoryIsGeneric
+    ? [cleanMenuContext]
+    : [cleanCategory, cleanMenuContext];
+
+  return candidates.find((value) =>
+    value && value.normalize("NFKC").toLowerCase() !== originalKey
+  );
+}
+
+function serializeVisualReview(
+  review: DishImageVisualReview | SkippedVisualReview,
+) {
+  return {
+    status: review.status,
+    verdict: review.status === "completed" ? review.verdict : null,
+    qualifier: review.status === "completed" ? review.qualifier || null : null,
+    reviewed_images: review.reviewedImages,
+    ...(review.status === "completed" ? {} : { reason: review.reason }),
+  };
 }
 
 serve(async (req) => {
@@ -234,6 +313,13 @@ serve(async (req) => {
       url.searchParams.get("menu_context"),
       MAX_CONTEXT_LENGTH,
     );
+    const deepSearch = url.searchParams.get("deep_search") === "true";
+    const deepSearchTerm = sanitizeDishImageQualifier(
+      cleanSearchTerm(
+        url.searchParams.get("deep_search_term"),
+        MAX_CONTEXT_LENGTH,
+      ),
+    );
     const limitRaw = Number(url.searchParams.get("limit") ?? "12");
     const hl = (url.searchParams.get("hl") ?? "zh-cn").trim() || "zh-cn";
     const gl = (url.searchParams.get("gl") ?? "cn").trim() || "cn";
@@ -248,18 +334,70 @@ serve(async (req) => {
       );
     }
 
-    const ambiguity = await decideDishNameAmbiguity(
-      originalName,
-      category,
-      menuContext,
-    );
-    const query = buildDishImageSearchQuery(
-      originalName,
-      ambiguity.needsContext,
-      category,
-      menuContext,
-    );
-    const results = await serpApiImageSearch(query, limit, hl, gl);
+    if (deepSearch && !deepSearchTerm) {
+      return json(
+        { error: "Missing query param `deep_search_term`." },
+        400,
+        cors,
+      );
+    }
+
+    const query = deepSearch
+      ? buildDishImageDeepSearchQuery(originalName, deepSearchTerm ?? "")
+      : buildDishImageProbeQuery(originalName);
+    const rawCandidates = await fetchSerpApiImageCandidates(query, hl, gl);
+
+    let visualReview: DishImageVisualReview | SkippedVisualReview;
+    if (deepSearch) {
+      // The client only echoes a qualifier produced by the probe review. A
+      // deep search is terminal and must never make a second Gemini request.
+      visualReview = skippedVisualReview();
+    } else {
+      visualReview = await reviewDishImageCandidates({
+        originalName,
+        category,
+        menuContext,
+        maxImages: limit,
+        // Keep candidates untouched here. Medical metadata filtering is only
+        // for the client-facing results after Gemini has seen the thumbnails.
+        candidates: rawCandidates,
+      }).catch((error): DishImageVisualReview => {
+        console.warn(
+          "Dish image visual review failed safely:",
+          error instanceof Error ? error.message : String(error),
+        );
+        return {
+          status: "unavailable",
+          reason: "request_failed",
+          reviewedImages: 0,
+          reviewedThumbnailUrls: [],
+        };
+      });
+    }
+
+    const generatedDeepSearchTerm = deepSearch
+      ? undefined
+      : visualReview.status === "completed"
+      ? visualReview.verdict === "refine" ? visualReview.qualifier : undefined
+      : fallbackDeepSearchTerm(originalName, category, menuContext);
+    const needsDeepSearch = !deepSearch && Boolean(generatedDeepSearchTerm);
+    const reviewedCandidates = visualReview.status === "completed" &&
+        visualReview.verdict === "accept"
+      ? filterCandidatesToReviewedThumbnails(
+        rawCandidates,
+        visualReview.reviewedThumbnailUrls,
+      )
+      : undefined;
+    const results = deepSearch
+      ? mapClientResults(rawCandidates, query, limit)
+      : needsDeepSearch || !reviewedCandidates
+      ? []
+      : mapClientResults(reviewedCandidates, query, limit);
+    const ambiguitySource = deepSearch
+      ? "deep_search"
+      : visualReview.status === "completed"
+      ? "visual_review"
+      : "fallback";
 
     return json(
       {
@@ -267,14 +405,17 @@ serve(async (req) => {
         provider: "serpapi",
         engine: "google_images",
         ambiguity: {
-          needs_context: ambiguity.needsContext,
-          source: ambiguity.source,
+          needs_context: needsDeepSearch,
+          source: ambiguitySource,
         },
+        needs_deep_search: needsDeepSearch,
+        deep_search_term: generatedDeepSearchTerm ?? null,
+        visual_review: serializeVisualReview(visualReview),
         count: results.length,
         results,
       },
       200,
-      ambiguity.source === "fallback"
+      ambiguitySource === "fallback"
         ? { ...cors, "cache-control": "no-store" }
         : cors,
     );
