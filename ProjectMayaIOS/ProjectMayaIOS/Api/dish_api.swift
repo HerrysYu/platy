@@ -101,7 +101,7 @@ private struct DishImageSearchResult: Codable {
 final class DishService {
     private static let functionSlug = "dish_detail_new"
     private static let imageFunctionSlug = "get_dish_images"
-    private static let imageSearchVersion = "2"
+    private static let imageSearchVersion = "3"
 
     private let authService: AuthService
     private let session: URLSession

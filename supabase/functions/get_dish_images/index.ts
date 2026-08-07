@@ -1,23 +1,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { buildDishImageSearchQuery } from "../_shared/dish_image_query.ts";
 import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 const MAX_ORIGINAL_NAME_LENGTH = 200;
 const MAX_CONTEXT_LENGTH = 160;
-const MAX_SEARCH_QUERY_LENGTH = 400;
-const FOOD_INTENT_TERMS = ["菜品", "美食"];
-const NON_FOOD_EXCLUSIONS = [
-  "甲沟炎",
-  "灰指甲",
-  "趾甲",
-  "皮肤病",
-  "医疗",
-  "医院",
-  "疾病",
-  "手术",
-  "治疗",
-  "人体",
-];
 const NON_FOOD_RESULT_PATTERNS = [
   /甲沟炎|灰指甲|趾甲|皮肤病|皮肤科|医疗|医院|疾病|手术|治疗|感染|患者|病例|病症/iu,
   /\b(?:ingrown\s+toenail|toenail|podiatr(?:y|ic|ist)?|dermatolog(?:y|ist)?|medical|clinic|hospital|surgery|infection|disease|patient|treatment)\b/iu,
@@ -86,50 +73,6 @@ function cleanSearchTerm(
   const normalized = cleanString(value)?.replace(/\s+/g, " ");
   const clean = normalized ? cleanMenuName(normalized) : undefined;
   return clean?.slice(0, maxLength);
-}
-
-function buildSearchQuery(
-  originalName: string,
-  category?: string,
-  menuContext?: string,
-): string {
-  const seen = new Set<string>();
-  const parts: string[] = [];
-
-  // Put semantic food context before the ambiguous name so image search does
-  // not anchor on a literal body-part interpretation. The original menu text
-  // remains an exact phrase and the translated display name is never used.
-  for (const value of [category, menuContext]) {
-    if (!value) continue;
-
-    const dedupeKey = value.normalize("NFKC").toLowerCase();
-    if (seen.has(dedupeKey)) continue;
-
-    seen.add(dedupeKey);
-    parts.push(value);
-  }
-
-  const requiredParts = [
-    quoteSearchPhrase(originalName),
-    ...FOOD_INTENT_TERMS,
-    ...NON_FOOD_EXCLUSIONS.map((term) => `-${term}`),
-  ];
-  const requiredQuery = requiredParts.join(" ");
-  const contextBudget = Math.max(
-    0,
-    MAX_SEARCH_QUERY_LENGTH - requiredQuery.length - 1,
-  );
-  const contextQuery = parts.join(" ").slice(0, contextBudget).trim();
-
-  return [contextQuery, requiredQuery].filter(Boolean).join(" ");
-}
-
-function quoteSearchPhrase(value: string): string {
-  const clean = value
-    .replace(/["“”]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return clean ? `"${clean}"` : value;
 }
 
 function isLikelyNonFoodResult(item: SerpApiImageResult): boolean {
@@ -299,7 +242,11 @@ serve(async (req) => {
       );
     }
 
-    const query = buildSearchQuery(originalName, category, menuContext);
+    const query = buildDishImageSearchQuery(
+      originalName,
+      category,
+      menuContext,
+    );
     const results = await serpApiImageSearch(query, limit, hl, gl);
 
     return json(
