@@ -115,7 +115,7 @@ struct DishImageSearchOutcome {
 final class DishService {
     private static let functionSlug = "dish_detail_new"
     private static let imageFunctionSlug = "get_dish_images"
-    private static let imageSearchVersion = "6"
+    private static let imageSearchVersion = "7"
 
     private let authService: AuthService
     private let session: URLSession

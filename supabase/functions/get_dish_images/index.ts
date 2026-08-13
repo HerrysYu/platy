@@ -11,12 +11,20 @@ import {
   reviewDishImageCandidates,
 } from "../_shared/dish_image_review.ts";
 import { deriveDishImageProbeOutcome } from "../_shared/dish_image_review_outcome.ts";
+import {
+  dishImageSearchUnavailablePayload,
+  type DishImageSearchUnavailableReason,
+} from "../_shared/dish_image_search_unavailable.ts";
+import {
+  fetchTextWithTimeout,
+  UpstreamTimeoutError,
+} from "../_shared/fetch_text_with_timeout.ts";
 import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 const MAX_ORIGINAL_NAME_LENGTH = 200;
 const MAX_CONTEXT_LENGTH = 160;
-const SERPAPI_TIMEOUT_MS = 5000;
+const SERPAPI_TIMEOUT_MS = 6500;
 const NON_FOOD_RESULT_PATTERNS = [
   /甲沟炎|灰指甲|趾甲|皮肤病|皮肤科|医疗|医院|疾病|手术|治疗|感染|患者|病例|病症/iu,
   /\b(?:ingrown\s+toenail|toenail|podiatr(?:y|ic|ist)?|dermatolog(?:y|ist)?|medical|clinic|hospital|surgery|infection|disease|patient|treatment)\b/iu,
@@ -54,7 +62,7 @@ function json(data: unknown, status = 200, extraHeaders: HeadersInit = {}) {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "cache-control": "public, max-age=300",
+      "cache-control": status >= 400 ? "no-store" : "public, max-age=300",
       ...extraHeaders,
     },
   });
@@ -107,27 +115,6 @@ function getRequiredEnv(name: string): string {
   throw new Error(`Missing required env var: ${name}`);
 }
 
-async function fetchWithTimeout(
-  input: RequestInfo | URL,
-  init: RequestInit = {},
-  timeoutMs = 20000,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort("Request timeout"),
-    timeoutMs,
-  );
-
-  try {
-    return await fetch(input, {
-      ...init,
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function fetchSerpApiImageCandidates(
   q: string,
   hl: string,
@@ -143,12 +130,11 @@ async function fetchSerpApiImageCandidates(
     ijn: "0",
   });
 
-  const res = await fetchWithTimeout(
+  const { response: res, body } = await fetchTextWithTimeout(
     `${SERPAPI_ENDPOINT}?${params.toString()}`,
     {},
     SERPAPI_TIMEOUT_MS,
   );
-  const body = await res.text();
 
   if (!res.ok) {
     throw new Error(
@@ -315,7 +301,22 @@ serve(async (req) => {
     const query = deepSearch
       ? buildDishImageDeepSearchQuery(originalName, deepSearchTerm ?? "")
       : buildDishImageProbeQuery(originalName);
-    const rawCandidates = await fetchSerpApiImageCandidates(query, hl, gl);
+    let rawCandidates: SerpApiImageResult[];
+    try {
+      rawCandidates = await fetchSerpApiImageCandidates(query, hl, gl);
+    } catch (error) {
+      const reason: DishImageSearchUnavailableReason =
+        error instanceof UpstreamTimeoutError ? "timeout" : "request_failed";
+      console.warn(
+        `SerpAPI image search unavailable (${reason}):`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return json(
+        dishImageSearchUnavailablePayload(query, reason),
+        200,
+        { ...cors, "cache-control": "no-store" },
+      );
+    }
 
     let visualReview: DishImageVisualReview | SkippedVisualReview;
     if (deepSearch) {
@@ -393,6 +394,7 @@ serve(async (req) => {
         query,
         provider: "serpapi",
         engine: "google_images",
+        search: { status: "completed" },
         ambiguity: {
           needs_context: needsDeepSearch,
           source: ambiguitySource,
