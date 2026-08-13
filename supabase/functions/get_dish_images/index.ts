@@ -6,10 +6,11 @@ import {
 } from "../_shared/dish_image_query.ts";
 import {
   type DishImageVisualReview,
-  filterCandidatesToReviewedThumbnails,
+  filterCandidatesToApprovedThumbnails,
   normalizeTrustedThumbnailUrl,
   reviewDishImageCandidates,
 } from "../_shared/dish_image_review.ts";
+import { deriveDishImageProbeOutcome } from "../_shared/dish_image_review_outcome.ts";
 import { cleanMenuName } from "../_shared/menu_name.ts";
 
 const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
@@ -20,21 +21,6 @@ const NON_FOOD_RESULT_PATTERNS = [
   /甲沟炎|灰指甲|趾甲|皮肤病|皮肤科|医疗|医院|疾病|手术|治疗|感染|患者|病例|病症/iu,
   /\b(?:ingrown\s+toenail|toenail|podiatr(?:y|ic|ist)?|dermatolog(?:y|ist)?|medical|clinic|hospital|surgery|infection|disease|patient|treatment)\b/iu,
 ];
-const GENERIC_CATEGORY_KEYS = new Set([
-  "招牌",
-  "招牌菜",
-  "招牌推荐",
-  "推荐",
-  "推荐菜",
-  "新品",
-  "新品推荐",
-  "特色",
-  "特色菜",
-  "必点",
-  "热销",
-  "人气",
-  "主厨推荐",
-]);
 
 type SerpApiImageResult = {
   position?: number;
@@ -245,28 +231,6 @@ function skippedVisualReview(): SkippedVisualReview {
   return { status: "skipped", reason: "deep_search", reviewedImages: 0 };
 }
 
-function fallbackDeepSearchTerm(
-  originalName: string,
-  category?: string,
-  menuContext?: string,
-): string | undefined {
-  const originalKey = originalName.normalize("NFKC").toLowerCase();
-  const cleanCategory = sanitizeDishImageQualifier(category);
-  const cleanMenuContext = sanitizeDishImageQualifier(menuContext);
-  const categoryIsGeneric = cleanCategory
-    ? GENERIC_CATEGORY_KEYS.has(
-      cleanCategory.normalize("NFKC").toLowerCase(),
-    )
-    : false;
-  const candidates = categoryIsGeneric
-    ? [cleanMenuContext]
-    : [cleanCategory, cleanMenuContext];
-
-  return candidates.find((value) =>
-    value && value.normalize("NFKC").toLowerCase() !== originalKey
-  );
-}
-
 function serializeVisualReview(
   review: DishImageVisualReview | SkippedVisualReview,
 ) {
@@ -275,6 +239,12 @@ function serializeVisualReview(
     verdict: review.status === "completed" ? review.verdict : null,
     qualifier: review.status === "completed" ? review.qualifier || null : null,
     reviewed_images: review.reviewedImages,
+    approved_images: review.status === "completed"
+      ? review.approvedThumbnailUrls.length
+      : 0,
+    approved_indices: review.status === "completed"
+      ? review.approvedIndices
+      : [],
     ...(review.status === "completed" ? {} : { reason: review.reason }),
   };
 }
@@ -375,29 +345,48 @@ serve(async (req) => {
       });
     }
 
-    const generatedDeepSearchTerm = deepSearch
-      ? undefined
-      : visualReview.status === "completed"
-      ? visualReview.verdict === "refine" ? visualReview.qualifier : undefined
-      : fallbackDeepSearchTerm(originalName, category, menuContext);
-    const needsDeepSearch = !deepSearch && Boolean(generatedDeepSearchTerm);
+    const probeOutcome = deepSearch
+      ? {
+        needsDeepSearch: false,
+        deepSearchTerm: undefined,
+        minimumApprovedImages: 0,
+      }
+      : deriveDishImageProbeOutcome(
+        visualReview.status === "completed"
+          ? {
+            status: "completed",
+            reviewedImages: visualReview.reviewedImages,
+            approvedImages: visualReview.approvedThumbnailUrls.length,
+            qualifier: visualReview.qualifier,
+          }
+          : {
+            status: "unavailable",
+            reviewedImages: visualReview.reviewedImages,
+          },
+        originalName,
+        category,
+        menuContext,
+      );
+    const generatedDeepSearchTerm = probeOutcome.deepSearchTerm;
+    const needsDeepSearch = !deepSearch && probeOutcome.needsDeepSearch;
     const reviewedCandidates = visualReview.status === "completed" &&
-        visualReview.verdict === "accept"
-      ? filterCandidatesToReviewedThumbnails(
+        !needsDeepSearch
+      ? filterCandidatesToApprovedThumbnails(
         rawCandidates,
-        visualReview.reviewedThumbnailUrls,
+        visualReview.approvedThumbnailUrls,
       )
       : undefined;
     const results = deepSearch
       ? mapClientResults(rawCandidates, query, limit)
-      : needsDeepSearch || !reviewedCandidates
+      : visualReview.status !== "completed" || needsDeepSearch ||
+          !reviewedCandidates
       ? []
       : mapClientResults(reviewedCandidates, query, limit);
     const ambiguitySource = deepSearch
       ? "deep_search"
       : visualReview.status === "completed"
       ? "visual_review"
-      : "fallback";
+      : "visual_review_unavailable";
 
     return json(
       {
@@ -410,12 +399,13 @@ serve(async (req) => {
         },
         needs_deep_search: needsDeepSearch,
         deep_search_term: generatedDeepSearchTerm ?? null,
+        minimum_approved_images: probeOutcome.minimumApprovedImages,
         visual_review: serializeVisualReview(visualReview),
         count: results.length,
         results,
       },
       200,
-      ambiguitySource === "fallback"
+      visualReview.status === "unavailable"
         ? { ...cors, "cache-control": "no-store" }
         : cors,
     );

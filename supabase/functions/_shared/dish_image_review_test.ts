@@ -1,5 +1,5 @@
 import {
-  filterCandidatesToReviewedThumbnails,
+  filterCandidatesToApprovedThumbnails,
   normalizeTrustedThumbnailUrl,
   parseGeminiImageReview,
   reviewDishImageCandidates,
@@ -89,13 +89,13 @@ Deno.test("selects at most six unique trusted thumbnails before metadata filteri
   );
 });
 
-Deno.test("publishes only thumbnails that were actually included in review", () => {
+Deno.test("publishes only thumbnails explicitly approved by Gemini", () => {
   const candidates = [
     { thumbnail: "https://encrypted-tbn0.gstatic.com/reviewed.jpg" },
     { thumbnail: "https://serpapi.com/not-reviewed.jpg" },
     { thumbnail: "https://untrusted.example/not-reviewed.jpg" },
   ];
-  const filtered = filterCandidatesToReviewedThumbnails(candidates, [
+  const filtered = filterCandidatesToApprovedThumbnails(candidates, [
     "https://encrypted-tbn0.gstatic.com/reviewed.jpg",
   ]);
   assert(filtered.length === 1, `Expected 1 candidate, got ${filtered.length}`);
@@ -105,30 +105,51 @@ Deno.test("publishes only thumbnails that were actually included in review", () 
   );
 });
 
-Deno.test("strictly parses accept and refine decisions while ignoring thought parts", () => {
+Deno.test("parses fenced camelCase per-image decisions with extra fields and ignores thoughts", () => {
+  const decision = parseGeminiImageReview(
+    geminiResponse(
+      '```json\n{"approvedIndices":[2,0,2,8],"qualifier":"鲜切牛肉","needsDeepSearch":true,"extra":"ignored"}\n```',
+      true,
+    ),
+    4,
+  );
+
+  assert(decision !== undefined, "Expected a per-image decision");
+  assert(
+    JSON.stringify(decision.approvedIndices) === JSON.stringify([0, 2]),
+    "Expected unique, bounded indices in image order",
+  );
+  assert(decision.qualifier === "鲜切牛肉", "Expected clean qualifier");
+});
+
+Deno.test("fails closed on legacy accept and supports legacy refine", () => {
   const accept = parseGeminiImageReview(
-    geminiResponse('{"verdict":"accept","qualifier":""}', true),
+    geminiResponse('{"verdict":"accept","qualifier":"","extra":true}'),
+    3,
   );
   const refine = parseGeminiImageReview(
     geminiResponse('{"verdict":"refine","qualifier":"鲜切牛肉"}'),
+    3,
   );
 
-  assert(accept?.verdict === "accept", "Expected accept verdict");
-  assert(refine?.verdict === "refine", "Expected refine verdict");
-  assert(refine?.qualifier === "鲜切牛肉", "Expected clean qualifier");
+  assert(
+    accept === undefined,
+    "Legacy accept must not publish unreviewed images",
+  );
+  assert(refine?.approvedIndices.length === 0, "Legacy refine approves none");
+  assert(refine.qualifier === "鲜切牛肉", "Expected legacy qualifier");
 });
 
-Deno.test("rejects malformed or non-strict Gemini review output", () => {
+Deno.test("rejects malformed Gemini review output", () => {
   const invalid = [
-    '```json\n{"verdict":"accept","qualifier":""}\n```',
     '{"verdict":"maybe","qualifier":""}',
-    '{"verdict":"refine","qualifier":""}',
-    '{"verdict":"accept","qualifier":"牛肉"}',
-    '{"verdict":"accept","qualifier":"","extra":true}',
+    '{"approved_indices":"0,1","qualifier":""}',
+    '{"qualifier":"牛肉"}',
+    "not json",
   ];
   for (const text of invalid) {
     assert(
-      parseGeminiImageReview(geminiResponse(text)) === undefined,
+      parseGeminiImageReview(geminiResponse(text), 3) === undefined,
       `Expected malformed response to be rejected: ${text}`,
     );
   }
@@ -137,10 +158,11 @@ Deno.test("rejects malformed or non-strict Gemini review output", () => {
 Deno.test("removes search operators from a Gemini qualifier", () => {
   const refine = parseGeminiImageReview(
     geminiResponse(
-      '{"verdict":"refine","qualifier":"site:evil.example 鲜切牛肉 -甲沟炎"}',
+      '{"approved_indices":[],"qualifier":"site:evil.example 鲜切牛肉 -甲沟炎"}',
     ),
+    3,
   );
-  assert(refine?.verdict === "refine", "Expected a refine verdict");
+  assert(refine?.approvedIndices.length === 0, "Expected no approved images");
   assert(refine.qualifier === "鲜切牛肉", "Expected a plain-text qualifier");
 });
 
@@ -166,7 +188,9 @@ Deno.test("downloads trusted thumbnails in parallel and sends one raw REST Gemin
       return Promise.resolve(
         new Response(
           JSON.stringify(
-            geminiResponse('{"verdict":"refine","qualifier":"鲜切牛肉"}'),
+            geminiResponse(
+              '{"approved_indices":[0,2,4],"qualifier":""}',
+            ),
           ),
           { status: 200, headers: { "content-type": "application/json" } },
         ),
@@ -194,9 +218,18 @@ Deno.test("downloads trusted thumbnails in parallel and sends one raw REST Gemin
   );
 
   assert(result.status === "completed", "Expected a completed review");
-  assert(result.verdict === "refine", "Expected a refine verdict");
-  assert(result.qualifier === "鲜切牛肉", "Expected the generated qualifier");
+  assert(result.verdict === "accept", "Three of six images should be enough");
+  assert(result.qualifier === "", "No qualifier was requested");
   assert(result.reviewedImages === 6, "Expected six reviewed images");
+  assert(
+    JSON.stringify(result.approvedIndices) === JSON.stringify([0, 2, 4]),
+    "Expected the Gemini-approved indices",
+  );
+  assert(
+    JSON.stringify(result.approvedThumbnailUrls) ===
+      JSON.stringify([thumbnailUrls[0], thumbnailUrls[2], thumbnailUrls[4]]),
+    "Only approved thumbnails may be published",
+  );
   assert(
     downloaded.length === 6,
     "Only the top six thumbnails may be downloaded",
@@ -206,7 +239,7 @@ Deno.test("downloads trusted thumbnails in parallel and sends one raw REST Gemin
   const contents = requestBody?.contents as Array<
     { parts: Array<Record<string, unknown>> }
   >;
-  const imageParts = contents[0].parts.slice(1);
+  const imageParts = contents[0].parts.filter((part) => "inline_data" in part);
   assert(imageParts.length === 6, "Expected six inline image parts");
   for (const part of imageParts) {
     assert("inline_data" in part, "Expected raw REST inline_data");
@@ -219,6 +252,13 @@ Deno.test("downloads trusted thumbnails in parallel and sends one raw REST Gemin
       "Base64 must not contain a data URL prefix",
     );
   }
+  const labels = contents[0].parts.flatMap((part) =>
+    typeof part.text === "string" && part.text.startsWith("Thumbnail index ")
+      ? [part.text]
+      : []
+  );
+  assert(labels.length === 6, "Expected one explicit label per image");
+  assert(labels[0].includes("index 0"), "Expected zero-based image labels");
 });
 
 Deno.test("rejects an oversized streaming thumbnail without calling Gemini", async () => {
@@ -285,13 +325,15 @@ Deno.test("Gemini failures return unavailable without retries", async () => {
   assert(geminiCalls === 1, "Gemini requests must not be retried");
 });
 
-Deno.test("rejects a refine qualifier that only repeats the original name", async () => {
+Deno.test("clears a qualifier that only repeats the original name", async () => {
   const fetchImpl: typeof fetch = (input) => {
     if (String(input).includes(":generateContent")) {
       return Promise.resolve(
         new Response(
           JSON.stringify(
-            geminiResponse('{"verdict":"refine","qualifier":"脚趾肉"}'),
+            geminiResponse(
+              '{"approved_indices":[],"qualifier":"脚趾肉"}',
+            ),
           ),
           { status: 200, headers: { "content-type": "application/json" } },
         ),
@@ -313,9 +355,7 @@ Deno.test("rejects a refine qualifier that only repeats the original name", asyn
     },
   );
 
-  assert(result.status === "unavailable", "Expected invalid review fallback");
-  assert(
-    result.status === "unavailable" && result.reason === "invalid_response",
-    "Expected the repeated qualifier to be rejected",
-  );
+  assert(result.status === "completed", "The per-image review remains useful");
+  assert(result.qualifier === "", "The repeated qualifier must be cleared");
+  assert(result.approvedThumbnailUrls.length === 0, "Expected no approvals");
 });
