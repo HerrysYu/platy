@@ -1,0 +1,93 @@
+[
+  {
+    "created_at": 1764592547475,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_630405a6-81d3-422e-a98c-bb94c9d16710_45/source/supabase/functions/translation_service/index.ts",
+    "ezbr_sha256": "a2901fb5df9bdf9f0ad50f6bb263d066d3d731198630fbcddda76f3ef97178ee",
+    "id": "630405a6-81d3-422e-a98c-bb94c9d16710",
+    "import_map": false,
+    "name": "translation_service",
+    "slug": "translation_service",
+    "status": "ACTIVE",
+    "updated_at": 1786023226195,
+    "verify_jwt": true,
+    "version": 45
+  },
+  {
+    "created_at": 1764598009999,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_aacaf8cc-5d99-4a7c-b599-22b5645d0585_120/source/index.ts",
+    "ezbr_sha256": "f90dce2b54733252f444bf82e5b60a1a1ffc02eb54d1e67c3c857d5d28b114a2",
+    "id": "aacaf8cc-5d99-4a7c-b599-22b5645d0585",
+    "import_map": false,
+    "name": "dish_detail_api",
+    "slug": "dish_detail_api",
+    "status": "ACTIVE",
+    "updated_at": 1780684458891,
+    "verify_jwt": true,
+    "version": 127
+  },
+  {
+    "created_at": 1770278054423,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_6a109b92-da62-446b-96b5-baaf2e4012d5_38/source/supabase/functions/get_dish_images/index.ts",
+    "ezbr_sha256": "a8ebc86f96d145ee56307defc41048c92f33f889a28ecf0e2f63d6ea803f1693",
+    "id": "6a109b92-da62-446b-96b5-baaf2e4012d5",
+    "import_map": false,
+    "name": "get_dish_images",
+    "slug": "get_dish_images",
+    "status": "ACTIVE",
+    "updated_at": 1786617036842,
+    "verify_jwt": true,
+    "version": 38
+  },
+  {
+    "created_at": 1780685326348,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_ca217091-e611-4dee-af34-b288563cc53d_12/source/supabase/functions/dish_detail_api_gemini/index.ts",
+    "ezbr_sha256": "ccf66b055da8e3c67ec13cbfca74792d540b15883ec598b144a2853305e2ec5c",
+    "id": "ca217091-e611-4dee-af34-b288563cc53d",
+    "import_map": false,
+    "name": "dish_detail_api_gemini",
+    "slug": "dish_detail_api_gemini",
+    "status": "ACTIVE",
+    "updated_at": 1780996187127,
+    "verify_jwt": true,
+    "version": 16
+  },
+  {
+    "created_at": 1781029169550,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_90af6ad3-9a75-4142-a8bd-6efc058c81fa_5/source/supabase/functions/combo_recommend_api/index.ts",
+    "ezbr_sha256": "667dbd55a58639adeef412d547f2c5b7f22fa9df500c9c732e7b1de629b32b69",
+    "id": "90af6ad3-9a75-4142-a8bd-6efc058c81fa",
+    "import_map": false,
+    "name": "combo_recommend_api",
+    "slug": "combo_recommend_api",
+    "status": "ACTIVE",
+    "updated_at": 1785287939743,
+    "verify_jwt": true,
+    "version": 8
+  },
+  {
+    "created_at": 1781373126594,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_1b8b5096-5544-45f6-a324-489afe681d92_1/source/supabase/functions/dish_advice_api/index.ts",
+    "ezbr_sha256": "2f9ff41bcea66400d90e78ab481480e42e28d41a520baf4b4b167edb0c2cc701",
+    "id": "1b8b5096-5544-45f6-a324-489afe681d92",
+    "import_map": false,
+    "name": "dish_advice_api",
+    "slug": "dish_advice_api",
+    "status": "ACTIVE",
+    "updated_at": 1781373126594,
+    "verify_jwt": true,
+    "version": 4
+  },
+  {
+    "created_at": 1785483666109,
+    "entrypoint_path": "file:///tmp/user_fn_yxsjccowvxzxjiqfhazg_d7893311-8d0f-49ff-9c32-8f42313eb2ab_6/source/supabase/functions/dish_detail_new/index.ts",
+    "ezbr_sha256": "46ec6ef03740eecfdec682b31c0fbf848ea9d07e0a10e4129dc45f31650f3b15",
+    "id": "d7893311-8d0f-49ff-9c32-8f42313eb2ab",
+    "import_map": false,
+    "name": "dish_detail_new",
+    "slug": "dish_detail_new",
+    "status": "ACTIVE",
+    "updated_at": 1786023233024,
+    "verify_jwt": true,
+    "version": 6
+  }
+]
